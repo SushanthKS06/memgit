@@ -22,6 +22,7 @@ from memgit.config import Settings
 T = TypeVar("T", bound=BaseModel)
 
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL)
+_PLACEHOLDER_RE_G = re.compile(r"\{([a-z][a-z0-9_]*)\}")
 _MONEY_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?i:bb|\bb)")
 _MILLIONS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?i:mm|\bm)")
 _PLAIN_NUM_RE = re.compile(r"(\d+(?:\.\d+)?)")
@@ -87,6 +88,23 @@ class UsageTotals:
     def add_failure(self) -> None:
         self.calls += 1
         self.failures += 1
+
+
+def render_text(text: str, **placeholders: str) -> str:
+    """Fill ``{name}`` placeholders; unknown placeholder names fail loudly."""
+    missing: List[str] = []
+
+    def _sub(match: re.Match[str]) -> str:
+        key = match.group(1)
+        if key not in placeholders:
+            missing.append(key)
+            return match.group(0)
+        return str(placeholders[key])
+
+    rendered = _PLACEHOLDER_RE_G.sub(_sub, text)
+    if missing:
+        raise LLMError(f"template placeholders missing: {', '.join(sorted(set(missing)))}")
+    return rendered
 
 
 def api_key(settings: Settings) -> str:
@@ -444,13 +462,13 @@ def _validate_error_text(exc: ValidationError, schema: Type[BaseModel]) -> str:
 
 def fix_json_prompt(settings: Settings, last: str, error: str) -> str:
     loaded = LoadPrompt(settings, settings.prompts.fix_json)
-    return loaded.render(last=last, error=error)
+    return render_text(loaded.text, last=last, error=error)
 
 
 class LoadPrompt:
-    """Loads a prompt file from the configured prompts dir and fills {placeholders}."""
+    """Loads a prompt file from the configured prompts dir with its {placeholders}."""
 
-    _PLACEHOLDER_RE = re.compile(r"\{([a-z][a-z0-9_]*)\}")
+    _PLACEHOLDER_RE = _PLACEHOLDER_RE_G
 
     def __init__(self, settings: Settings, filename: str) -> None:
         from memgit.config import prompts_dir
@@ -460,18 +478,6 @@ class LoadPrompt:
             self.text = self.path.read_text(encoding="utf-8")
         except OSError as exc:
             raise LLMError(f"prompt file missing: {self.path} ({exc}); check [memory].prompts_dir") from exc
-        self._missing: List[str] = []
 
     def render(self, **placeholders: str) -> str:
-        def _sub(match: re.Match[str]) -> str:
-            key = match.group(1)
-            if key not in placeholders:
-                self._missing.append(key)
-                return match.group(0)
-            return str(placeholders[key])
-
-        rendered = self._PLACEHOLDER_RE.sub(_sub, self.text)
-        if self._missing:
-            missing = ", ".join(sorted(set(self._missing)))
-            raise LLMError(f"prompt {self.path.name} is missing placeholders: {missing}")
-        return rendered
+        return render_text(self.text, **placeholders)

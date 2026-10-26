@@ -1,6 +1,6 @@
 """Phase 0 viability gate: run consolidation on the synthetic transcript data file.
 
-Usage: memgit-bench-viability [--regen]
+Usage: python -m bench.viability [--regen]
 Pass thresholds: bench.viability_min_json_valid, bench.viability_min_verified.
 """
 from __future__ import annotations
@@ -15,10 +15,10 @@ from typing import Dict, List, Optional
 
 from memgit.cli import bootstrap_settings
 from memgit.config import ConfigError, LoadedConfig
-from memgit.core.consolidate import Consolidator, Turn
+from memgit.core.consolidate import Turn
 from memgit.core.llm import BudgetCounter, LLMClient, LLMError
+from memgit.core.session import MemorySession
 from memgit.core.store import MemoryStore
-from memgit.core.verify import Verifier
 
 
 def load_transcripts(path: Path) -> List[Dict]:
@@ -44,10 +44,7 @@ def to_turns(raw_transcript: List[Dict]) -> List[Turn]:
     ]
 
 
-def run_gate(
-    cfg: LoadedConfig,
-    transcripts_path: Path,
-) -> Dict:
+def run_gate(cfg: LoadedConfig, transcripts_path: Path) -> Dict:
     bench = cfg.settings.bench
     memory_root = Path(bench.viability_memory_dir)
     if memory_root.exists():
@@ -56,7 +53,7 @@ def run_gate(
     sessions = load_transcripts(transcripts_path)
     client = LLMClient(cfg.settings, budget=BudgetCounter())
     store = MemoryStore(cfg.settings, path=memory_root)
-    consolidator = Consolidator(cfg.settings, client)
+    session_runner = MemorySession(cfg.settings, store, client)
     rejected_by_reason: Counter = Counter()
     total_sessions = len(sessions)
     consolidated = 0
@@ -65,49 +62,39 @@ def run_gate(
     accepted_adds = 0
     accepted_supersedes = 0
     noop_verdicts = 0
-    non_consolidated = 0
 
     for session in sessions:
-        session_label = f"session {session.get('index', len(failed_sessions) + 1)}"
+        label = f"session {session.get('index')}"
         try:
-            store.begin_session()
-            consolidator.model
-            result = consolidator.propose(
-                transcript=to_turns(session["transcript"]),
-                active_entries=store.active_entries(),
-                next_id_example=store.next_id_example(),
-            )
+            outcome = session_runner.run(to_turns(session["transcript"]))
         except LLMError as exc:
-            non_consolidated += 1
-            failed_sessions.append(f"{session_label}: {exc}")
-            store.session_id = None
+            failed_sessions.append(f"{label}: {type(exc).__name__}: {exc}")
+            store.finish_session()
+            continue
+        if not outcome.ok:
+            failed_sessions.append(f"{label}: {outcome.error}")
             continue
         consolidated += 1
-        if result.used_retry:
+        if outcome.used_retry:
             retry_sessions += 1
-        verifier = Verifier(cfg.settings, turns=to_turns(session["transcript"]), active_entries=store.active_entries())
-        summary = verifier.verify_all(result.ops)
-        accepted, rejected, noops = summary.counts()
-        accepted_adds += sum(1 for v in summary.verdicts if v.status == "accepted_add")
-        accepted_supersedes += sum(1 for v in summary.verdicts if v.status == "accepted_supersede")
-        noop_verdicts += noops
-        for verdict in summary.verdicts:
-            if verdict.status == "rejected":
-                reason = verdict.reason.split(":")[0] if ":" in verdict.reason else verdict.reason
-                rejected_by_reason[reason] += 1
-        store.apply(summary.verdicts)
+        accepted_adds += len(outcome.added)
+        accepted_supersedes += len(outcome.superseded)
+        noop_verdicts += outcome.noop_count
+        for _, reason in outcome.rejected:
+            reason_head = reason.split(":")[0] if ":" in reason else reason
+            rejected_by_reason[reason_head] += 1
 
     rejected_total = sum(rejected_by_reason.values())
     candidates = accepted_adds + accepted_supersedes + rejected_total
     verified_rate = 1.0 if candidates == 0 else (accepted_adds + accepted_supersedes) / candidates
     json_valid_rate = consolidated / total_sessions if total_sessions else 0.0
     totals = client.totals()
-    report = {
+    return {
         "transcripts_file": str(transcripts_path),
         "memory_dir": str(memory_root),
         "sessions_total": total_sessions,
         "sessions_consolidated": consolidated,
-        "sessions_not_consolidated": non_consolidated,
+        "sessions_not_consolidated": total_sessions - consolidated,
         "sessions_used_json_retry": retry_sessions,
         "json_valid_rate": round(json_valid_rate, 4),
         "verified_op_rate": round(verified_rate, 4),
@@ -115,7 +102,7 @@ def run_gate(
         "ops_accepted_supersede": accepted_supersedes,
         "ops_rejected_total": rejected_total,
         "rejected_by_reason": dict(rejected_by_reason),
-        "oops_noops": noop_verdicts,
+        "noop_verdicts": noop_verdicts,
         "llm_calls": totals["calls"],
         "llm_failures": totals["failures"],
         "prompt_tokens": totals["prompt_tokens"],
@@ -129,7 +116,6 @@ def run_gate(
         "passed": json_valid_rate >= bench.viability_min_json_valid
         and verified_rate >= bench.viability_min_verified,
     }
-    return report
 
 
 def render_report(report: Dict) -> str:
@@ -142,7 +128,7 @@ def render_report(report: Dict) -> str:
         f"  used json retry: {report['sessions_used_json_retry']}",
         f"  not consolidated:{report['sessions_not_consolidated']}",
         f"op counts:         add={report['ops_accepted_add']} supersede={report['ops_accepted_supersede']} "
-        f"rejected={report['ops_rejected_total']} noop={report['oops_noops']}",
+        f"rejected={report['ops_rejected_total']} noop={report['noop_verdicts']}",
         f"rejected reasons:  {json.dumps(report['rejected_by_reason'])}",
         f"LLM usage:         calls={report['llm_calls']} failures={report['llm_failures']} "
         f"prompt_tokens={report['prompt_tokens']} completion_tokens={report['completion_tokens']}",
@@ -168,7 +154,7 @@ def write_report(cfg: LoadedConfig, report: Dict) -> Path:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(prog="memgit-viability", description="Phase 0 viability gate")
+    parser = argparse.ArgumentParser(prog="memgit-viability", description="Phase 0/1 viability gate")
     parser.add_argument("--config-file", default=None)
     parser.add_argument("--set", dest="overrides", action="append", default=None)
     parser.add_argument("--data-file", default=None)
@@ -180,8 +166,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"config error: {exc}", file=sys.stderr)
         return 2
     bench = cfg.settings.bench
-    transcripts_dir = Path(bench.transcripts_dir)
-    transcripts_path = Path(args.data_file) if args.data_file else transcripts_dir / "viability_transcripts.json"
+    transcripts_path = (
+        Path(args.data_file) if args.data_file else Path(bench.transcripts_dir) / "viability_transcripts.json"
+    )
     if args.regen or not transcripts_path.is_file():
         from bench.gen_data import generate
 

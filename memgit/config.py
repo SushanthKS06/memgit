@@ -72,6 +72,8 @@ class PromptsSettings(BaseModel):
     fix_json: str
     recall_select: str
     recall_block: str
+    answer: str
+    commit_message: str
 
     @model_validator(mode="after")
     def _names(self) -> "PromptsSettings":
@@ -109,6 +111,7 @@ class MemorySettings(BaseModel):
     max_recall_files: int
     max_recall_tokens: int
     recall_template: str
+    empty_memory_note: str
     token_count_method: str
 
     @field_validator("field_sep", "active_heading", "superseded_heading", "id_prefix", "quote_char")
@@ -164,6 +167,14 @@ class RecallSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     fallback_grep: bool
+    grep_min_token: int
+
+    @field_validator("grep_min_token")
+    @classmethod
+    def _grep_min(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("recall.grep_min_token must be >= 1")
+        return v
 
 
 class GitSettings(BaseModel):
@@ -171,6 +182,15 @@ class GitSettings(BaseModel):
 
     author_name: str
     author_email: str
+    timeout_s: float
+    core_autocrlf: bool
+
+    @field_validator("timeout_s")
+    @classmethod
+    def _timeout(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("git.timeout_s must be > 0")
+        return v
 
     @model_validator(mode="after")
     def _names(self) -> "GitSettings":
@@ -203,7 +223,15 @@ class LoggingSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     usage_log_path: str
+    rejections_log_path: str
     env_file: str
+
+    @model_validator(mode="after")
+    def _paths(self) -> "LoggingSettings":
+        for field_name, value in (("usage_log_path", self.usage_log_path), ("rejections_log_path", self.rejections_log_path), ("env_file", self.env_file)):
+            if not value.strip():
+                raise ValueError(f"logging.{field_name} must be non-empty")
+        return self
 
 
 class BenchSettings(BaseModel):

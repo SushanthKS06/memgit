@@ -26,6 +26,8 @@ few_shots = "few_shots.json"
 fix_json = "fix_json.md"
 recall_select = "recall_select.md"
 recall_block = "context.md"
+answer = "answer.md"
+commit_message = "commit_message.md"
 
 [memory]
 dir = "./memory"                    # relative to cwd
@@ -53,6 +55,7 @@ slug_strip_pattern = "[^a-z0-9._/-]"
 max_recall_files = 3
 max_recall_tokens = 1200
 recall_template = "context.md"      # file under prompts dir used to render recalled context
+empty_memory_note = "(no memories stored yet)"
 token_count_method = "words"        # "words" | "chars4"
 
 [verify]
@@ -62,10 +65,13 @@ normalise_rules = ["lowercase", "collapse_ws", "strip_edge_punct"]
 
 [recall]
 fallback_grep = true
+grep_min_token = 3                  # minimum length of query tokens considered by the grep fallback
 
 [git]
 author_name = "memgit agent"
 author_email = "memgit@example.com"
+timeout_s = 30.0                    # per git subprocess call timeout
+core_autocrlf = false               # repo-local core.autocrlf value; keep files LF
 
 [web]
 host = "127.0.0.1"
@@ -76,6 +82,7 @@ server_name = "memgit"
 
 [logging]
 usage_log_path = "./logs/usage.jsonl"
+rejections_log_path = "./logs/rejections.jsonl"   # hallucinated/bad ops, feeds the blocking metric
 env_file = ".env"                   # loaded from cwd when present; keys never logged or printed
 
 [bench]

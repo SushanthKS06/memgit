@@ -1,17 +1,18 @@
-"""Memgit CLI. Phase 0: doctor. Further subcommands arrive with later phases."""
+"""Memgit CLI. Phase 0-1: doctor, chat, recall. Further subcommands arrive with later phases."""
 from __future__ import annotations
 
 import argparse
+import logging
+import os
 import shutil
 import subprocess
 import sys
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
 from memgit.config import ConfigError, LoadedConfig, load_env_file, load_settings
-from memgit.core.llm import LLMClient, LLMError
+from memgit.core.llm import BudgetCounter, LLMClient, LLMError
 from memgit.core.schema import ensure_layout
 
 
@@ -176,6 +177,79 @@ def run_doctor(cfg: Optional[LoadedConfig]) -> int:
     return 1 if has_fail else 0
 
 
+def cmd_chat(cfg: LoadedConfig, args: argparse.Namespace) -> int:
+    from memgit.core.answer import Answerer
+    from memgit.core.consolidate import Turn
+    from memgit.core.retrieve import Recaller
+    from memgit.core.session import MemorySession
+    from memgit.core.store import MemoryStore
+
+    settings = cfg.settings
+    store = MemoryStore(settings)
+    store.ensure_git()
+    client = LLMClient(settings, budget=BudgetCounter())
+    recaller = Recaller(settings, client)
+    answerer = Answerer(settings, client)
+    session = MemorySession(settings, store, client)
+    transcript: List[Turn] = []
+    print("memgit chat — type '/exit' on its own line to end the session and commit memory")
+    while True:
+        try:
+            raw = input()
+        except EOFError:
+            break
+        line = raw.rstrip("\n")
+        if line.strip() == "/exit":
+            break
+        if not line.strip():
+            continue
+        user_turn = Turn(turn=len(transcript) + 1, role="user", text=line)
+        candidate = transcript + [user_turn]
+        try:
+            memory_block = recaller.recall(line).block
+        except LLMError as exc:
+            print(f"[recall unavailable: {exc}]", file=sys.stderr)
+            memory_block = ""
+        try:
+            reply = answerer.answer(candidate, memory_block)
+        except LLMError as exc:
+            print(f"[answer failed: {exc}]", file=sys.stderr)
+            continue
+        print(reply)
+        transcript = candidate + [Turn(turn=len(candidate) + 1, role="assistant", text=reply)]
+    if not transcript:
+        print("no turns; nothing to consolidate")
+        return 0
+    outcome = session.run(transcript)
+    if outcome.ok:
+        print(outcome.message)
+        print(f"committed: {outcome.commit_sha}")
+        return 0
+    print(outcome.message, file=sys.stderr)
+    return 1
+
+
+def cmd_recall(cfg: LoadedConfig, args: argparse.Namespace) -> int:
+    from memgit.core.llm import LLMClient as _Client
+    from memgit.core.retrieve import Recaller
+    from memgit.core.store import MemoryStore
+
+    settings = cfg.settings
+    store = MemoryStore(settings)
+    store.ensure_git()
+    client = LLMClient(settings, budget=BudgetCounter())
+    recaller = Recaller(settings, client)
+    try:
+        result = recaller.recall(args.query)
+    except LLMError as exc:
+        print(f"recall failed: {exc}", file=sys.stderr)
+        return 1
+    print(result.block)
+    print(f"files: {', '.join(result.files) if result.files else '(none)'}")
+    print(f"tokens: {result.tokens} (used_llm={result.used_llm} used_grep={result.used_grep})")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="memgit", description="Agent memory you can diff, audit, and roll back")
     parser.add_argument("--config-file", default=None, help="explicit TOML config path (overrides memgit.toml lookup)")
@@ -183,6 +257,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--prompts-dir", default=None, help="override the prompts dir (same as --set memory.prompts_dir=...)")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("doctor", help="validate config, git, prompts, api endpoint and model discovery")
+    sub.add_parser("chat", help="chat with the agent; ends with a memory consolidation commit")
+    recall_cmd = sub.add_parser("recall", help="preview the memory context block for a query")
+    recall_cmd.add_argument("query", help="query text; quoted if it contains spaces")
     return parser
 
 
@@ -210,6 +287,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     command = args.command
     if command == "doctor":
         return run_doctor(cfg)
+    if command == "chat":
+        return cmd_chat(cfg, args)
+    if command == "recall":
+        return cmd_recall(cfg, args)
     print(f"unknown command: {command}", file=sys.stderr)
     return 2
 
