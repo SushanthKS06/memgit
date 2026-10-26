@@ -1,4 +1,4 @@
-"""Memgit CLI: doctor, chat, recall, and history browsing (log/diff/show/revert)."""
+"""Memgit CLI: doctor, chat, recall, history (log/diff/show/revert), MCP serve."""
 from __future__ import annotations
 
 import argparse
@@ -250,6 +250,14 @@ def cmd_recall(cfg: LoadedConfig, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(cfg: LoadedConfig, args: argparse.Namespace) -> int:
+    from memgit.mcp.server import ServerCore, run_stdio
+
+    core = ServerCore(cfg.settings)
+    run_stdio(core)
+    return 0
+
+
 def cmd_log(cfg: LoadedConfig, args: argparse.Namespace) -> int:
     from memgit.core.store import MemoryStore
 
@@ -316,6 +324,7 @@ def build_parser() -> argparse.ArgumentParser:
     show_cmd.add_argument("commit", help="full or abbreviated commit sha")
     revert_cmd = sub.add_parser("revert", help="roll back one session commit with a revert commit")
     revert_cmd.add_argument("commit", help="full or abbreviated commit sha")
+    sub.add_parser("serve", help="run the MCP stdio server (JSON-RPC over stdin/stdout)")
     return parser
 
 
@@ -356,6 +365,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return cmd_show(cfg, args)
     if command == "revert":
         return cmd_revert(cfg, args)
+    if command == "serve":
+        return cmd_serve(cfg, args)
     print(f"unknown command: {command}", file=sys.stderr)
     return 2
 

@@ -250,6 +250,8 @@ class MemoryStore:
         if self.session_id is not None:
             raise StoreError("cannot revert inside an open session")
         self.ensure_git()
+        if not self.diff_against(commit).strip():
+            raise StoreError(f"revert skipped: commit {commit} has no changes (nothing to roll back)")
         try:
             self._git("revert", "--no-edit", commit)
         except StoreError:
