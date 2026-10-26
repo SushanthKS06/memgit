@@ -211,12 +211,21 @@ class WebSettings(BaseModel):
 
     host: str
     port: int
+    page_size: int
+    rejections_rows: int
 
     @field_validator("port")
     @classmethod
     def _port(cls, v: int) -> int:
-        if not 1 <= v <= 65535:
-            raise ValueError("web.port must be within [1, 65535]")
+        if not 0 <= v <= 65535:
+            raise ValueError("web.port must be within [0, 65535] (0 = bind a free ephemeral port)")
+        return v
+
+    @field_validator("page_size", "rejections_rows")
+    @classmethod
+    def _positive(cls, v: int, info) -> int:
+        if v < 1:
+            raise ValueError(f"web.{info.field_name} must be >= 1")
         return v
 
 

@@ -1,4 +1,4 @@
-"""Memgit CLI: doctor, chat, recall, history (log/diff/show/revert), MCP serve."""
+"""Memgit CLI: doctor, chat, recall, history (log/diff/show/revert), MCP serve, web UI."""
 from __future__ import annotations
 
 import argparse
@@ -258,6 +258,15 @@ def cmd_serve(cfg: LoadedConfig, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_web(cfg: LoadedConfig, args: argparse.Namespace) -> int:
+    from memgit.web.server import serve
+
+    print(f"memgit web UI on http://{cfg.settings.web.host}:{cfg.settings.web.port} (ctrl-c to stop)")
+    logging.getLogger("memgit.web").setLevel(logging.DEBUG)
+    serve(cfg.settings)
+    return 0
+
+
 def cmd_log(cfg: LoadedConfig, args: argparse.Namespace) -> int:
     from memgit.core.store import MemoryStore
 
@@ -325,6 +334,7 @@ def build_parser() -> argparse.ArgumentParser:
     revert_cmd = sub.add_parser("revert", help="roll back one session commit with a revert commit")
     revert_cmd.add_argument("commit", help="full or abbreviated commit sha")
     sub.add_parser("serve", help="run the MCP stdio server (JSON-RPC over stdin/stdout)")
+    sub.add_parser("web", help="serve the memgit web UI (history, patches, one-click revert)")
     return parser
 
 
@@ -367,6 +377,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return cmd_revert(cfg, args)
     if command == "serve":
         return cmd_serve(cfg, args)
+    if command == "web":
+        return cmd_web(cfg, args)
     print(f"unknown command: {command}", file=sys.stderr)
     return 2
 

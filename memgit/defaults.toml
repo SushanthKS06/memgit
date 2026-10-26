@@ -76,6 +76,8 @@ log_limit = 50                      # default entry count for `memgit log --limi
 [web]
 host = "127.0.0.1"
 port = 8377
+page_size = 20                      # commits listed per history page
+rejections_rows = 200               # max rows shown on the rejections audit page
 
 [mcp]
 server_name = "memgit"
