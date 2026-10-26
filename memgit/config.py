@@ -74,6 +74,7 @@ class PromptsSettings(BaseModel):
     recall_block: str
     answer: str
     commit_message: str
+    judge_recall: str
 
     @model_validator(mode="after")
     def _names(self) -> "PromptsSettings":
@@ -259,6 +260,7 @@ class BenchSettings(BaseModel):
     output_dir: str
     abstain_phrases_file: str
     transcript_seed: int
+    benchmark_memory_dir: str
     viability_memory_dir: str
     viability_transcripts: int
     viability_min_json_valid: float

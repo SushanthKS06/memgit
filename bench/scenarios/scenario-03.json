@@ -1,0 +1,61 @@
+{
+  "id": "scenario-03",
+  "seed": 209461036,
+  "sessions": [
+    {
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "hey what's up"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "My dog is called Nacho and he is a corgi."
+        },
+        {
+          "turn": 3,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "text": "We decided the payments rewrite will use the DuckDB stack."
+        },
+        {
+          "turn": 5,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    },
+    {
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "anyway"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "what breed is Nacho again?",
+      "expect": "corgi"
+    },
+    {
+      "query": "which stack did we pick for the payments rewrite?",
+      "expect": "DuckDB"
+    }
+  ]
+}

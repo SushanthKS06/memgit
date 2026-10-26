@@ -1,0 +1,61 @@
+{
+  "id": "scenario-10",
+  "seed": 508915246,
+  "sessions": [
+    {
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "ok cool"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "Important: I am allergic to shellfish; never suggest recipes containing it."
+        },
+        {
+          "turn": 3,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "text": "I currently live in Wellington, so schedule anything to that timezone."
+        },
+        {
+          "turn": 5,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    },
+    {
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "what time is it"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "remind me what I'm allergic to, I keep forgetting",
+      "expect": "shellfish"
+    },
+    {
+      "query": "where do I actually live right now?",
+      "expect": "Wellington"
+    }
+  ]
+}

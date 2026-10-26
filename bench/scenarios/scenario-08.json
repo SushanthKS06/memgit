@@ -1,0 +1,75 @@
+{
+  "id": "scenario-08",
+  "seed": 1416817563,
+  "sessions": [
+    {
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "hmm interesting"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "I currently live in Krakow, so schedule anything to that timezone."
+        },
+        {
+          "turn": 3,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "text": "For serious backend work my language of choice is Rust, no exceptions."
+        },
+        {
+          "turn": 5,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "text": "My main editor is Neovim; treat that as my default for all code work."
+        },
+        {
+          "turn": 7,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        }
+      ]
+    },
+    {
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "lol ok"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "where do I actually live right now?",
+      "expect": "Krakow"
+    },
+    {
+      "query": "what language do I use for serious backend work?",
+      "expect": "Rust"
+    },
+    {
+      "query": "quick check — what's my main editor again?",
+      "expect": "Neovim"
+    }
+  ]
+}

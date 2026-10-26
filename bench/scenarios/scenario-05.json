@@ -1,0 +1,61 @@
+{
+  "id": "scenario-05",
+  "seed": 1787784071,
+  "sessions": [
+    {
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "thanks, that helps"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "Important: I am allergic to hazelnuts; never suggest recipes containing it."
+        },
+        {
+          "turn": 3,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "text": "We decided the billing rewrite will use the EventStore stack."
+        },
+        {
+          "turn": 5,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        }
+      ]
+    },
+    {
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "thanks, that helps"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "remind me what I'm allergic to, I keep forgetting",
+      "expect": "hazelnuts"
+    },
+    {
+      "query": "which stack did we pick for the billing rewrite?",
+      "expect": "EventStore"
+    }
+  ]
+}

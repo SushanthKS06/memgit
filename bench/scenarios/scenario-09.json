@@ -1,0 +1,61 @@
+{
+  "id": "scenario-09",
+  "seed": 1985594642,
+  "sessions": [
+    {
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "what time is it"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "Important: I am allergic to celery; never suggest recipes containing it."
+        },
+        {
+          "turn": 3,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "text": "My dog is called Cobol and he is a corgi."
+        },
+        {
+          "turn": 5,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        }
+      ]
+    },
+    {
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "ok cool"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "remind me what I'm allergic to, I keep forgetting",
+      "expect": "celery"
+    },
+    {
+      "query": "what breed is Cobol again?",
+      "expect": "corgi"
+    }
+  ]
+}

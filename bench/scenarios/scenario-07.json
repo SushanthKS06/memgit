@@ -1,0 +1,61 @@
+{
+  "id": "scenario-07",
+  "seed": 358804388,
+  "sessions": [
+    {
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "anyway"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "For serious backend work my language of choice is Kotlin, no exceptions."
+        },
+        {
+          "turn": 3,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "text": "My dog is called Bazel and he is a samoyed."
+        },
+        {
+          "turn": 5,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        }
+      ]
+    },
+    {
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "anyway"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "what language do I use for serious backend work?",
+      "expect": "Kotlin"
+    },
+    {
+      "query": "what breed is Bazel again?",
+      "expect": "samoyed"
+    }
+  ]
+}

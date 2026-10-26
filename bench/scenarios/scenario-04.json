@@ -1,0 +1,75 @@
+{
+  "id": "scenario-04",
+  "seed": 1224074479,
+  "sessions": [
+    {
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "lol ok"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "For serious backend work my language of choice is Rust, no exceptions."
+        },
+        {
+          "turn": 3,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "text": "Important: I am allergic to lupin; never suggest recipes containing it."
+        },
+        {
+          "turn": 5,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "text": "My main editor is Helix; treat that as my default for all code work."
+        },
+        {
+          "turn": 7,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        }
+      ]
+    },
+    {
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "what time is it"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "what language do I use for serious backend work?",
+      "expect": "Rust"
+    },
+    {
+      "query": "remind me what I'm allergic to, I keep forgetting",
+      "expect": "lupin"
+    },
+    {
+      "query": "quick check — what's my main editor again?",
+      "expect": "Helix"
+    }
+  ]
+}

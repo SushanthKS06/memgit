@@ -1,0 +1,75 @@
+{
+  "id": "scenario-02",
+  "seed": 1432492763,
+  "sessions": [
+    {
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "hey what's up"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "My dog is called Mango and he is a whippet."
+        },
+        {
+          "turn": 3,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "text": "For serious backend work my language of choice is C#, no exceptions."
+        },
+        {
+          "turn": 5,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "text": "We decided the ingest rewrite will use the Postgres + Redis stack."
+        },
+        {
+          "turn": 7,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    },
+    {
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "what time is it"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "what breed is Mango again?",
+      "expect": "whippet"
+    },
+    {
+      "query": "what language do I use for serious backend work?",
+      "expect": "C#"
+    },
+    {
+      "query": "which stack did we pick for the ingest rewrite?",
+      "expect": "Postgres + Redis"
+    }
+  ]
+}

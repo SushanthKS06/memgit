@@ -1,0 +1,75 @@
+{
+  "id": "scenario-01",
+  "seed": 1599354356,
+  "sessions": [
+    {
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "ok cool"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "I currently live in Krakow, so schedule anything to that timezone."
+        },
+        {
+          "turn": 3,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "text": "My main editor is Zed; treat that as my default for all code work."
+        },
+        {
+          "turn": 5,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "text": "My dog is called Asphalt and he is a beagle."
+        },
+        {
+          "turn": 7,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        }
+      ]
+    },
+    {
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "anyway"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "where do I actually live right now?",
+      "expect": "Krakow"
+    },
+    {
+      "query": "quick check — what's my main editor again?",
+      "expect": "Zed"
+    },
+    {
+      "query": "what breed is Asphalt again?",
+      "expect": "beagle"
+    }
+  ]
+}

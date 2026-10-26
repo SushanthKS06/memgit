@@ -1,0 +1,75 @@
+{
+  "id": "scenario-06",
+  "seed": 555026786,
+  "sessions": [
+    {
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "lol ok"
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "text": "For serious backend work my language of choice is Rust, no exceptions."
+        },
+        {
+          "turn": 3,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "text": "My main editor is Kate; treat that as my default for all code work."
+        },
+        {
+          "turn": 5,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "text": "My dog is called Bazel and he is a samoyed."
+        },
+        {
+          "turn": 7,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        }
+      ]
+    },
+    {
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "what time is it"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "what language do I use for serious backend work?",
+      "expect": "Rust"
+    },
+    {
+      "query": "quick check — what's my main editor again?",
+      "expect": "Kate"
+    },
+    {
+      "query": "what breed is Bazel again?",
+      "expect": "samoyed"
+    }
+  ]
+}

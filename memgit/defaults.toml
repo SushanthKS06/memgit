@@ -28,6 +28,7 @@ recall_select = "recall_select.md"
 recall_block = "context.md"
 answer = "answer.md"
 commit_message = "commit_message.md"
+judge_recall = "judge_recall.md"
 
 [memory]
 dir = "./memory"                    # relative to cwd
@@ -94,6 +95,7 @@ runs_per_scenario = 3
 output_dir = "./bench/reports"
 abstain_phrases_file = "./bench/data/abstain_phrases.json"
 transcript_seed = 422               # seed for synthetic transcript generation
+benchmark_memory_dir = "./bench/.benchmark/memory"   # scratch store wiped per benchmark rep
 viability_memory_dir = "./bench/.viability/memory"   # scratch store wiped by bench/viability.py
 viability_transcripts = 20
 viability_min_json_valid = 0.9
