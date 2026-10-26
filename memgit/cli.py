@@ -1,4 +1,4 @@
-"""Memgit CLI. Phase 0-1: doctor, chat, recall. Further subcommands arrive with later phases."""
+"""Memgit CLI: doctor, chat, recall, and history browsing (log/diff/show/revert)."""
 from __future__ import annotations
 
 import argparse
@@ -250,6 +250,54 @@ def cmd_recall(cfg: LoadedConfig, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_log(cfg: LoadedConfig, args: argparse.Namespace) -> int:
+    from memgit.core.store import MemoryStore
+
+    settings = cfg.settings
+    limit = args.limit if args.limit is not None else settings.git.log_limit
+    if limit <= 0:
+        print("--limit must be >= 1", file=sys.stderr)
+        return 2
+    commits = MemoryStore(settings).log(limit)
+    if not commits:
+        print("(no commits yet)")
+        return 0
+    for commit in commits:
+        print(f"{commit.short_sha}  {commit.date}  {commit.subject}")
+    return 0
+
+
+def cmd_diff(cfg: LoadedConfig, args: argparse.Namespace) -> int:
+    from memgit.core.store import MemoryStore
+
+    out = MemoryStore(cfg.settings).diff_against(args.commit)
+    if not out.strip():
+        print("(no changes vs parent)")
+        return 0
+    print(out)
+    return 0
+
+
+def cmd_show(cfg: LoadedConfig, args: argparse.Namespace) -> int:
+    from memgit.core.store import MemoryStore
+
+    print(MemoryStore(cfg.settings).show(args.commit))
+    return 0
+
+
+def cmd_revert(cfg: LoadedConfig, args: argparse.Namespace) -> int:
+    from memgit.core.store import MemoryStore, StoreError
+
+    store = MemoryStore(cfg.settings)
+    try:
+        new_sha = store.revert(args.commit)
+    except StoreError as exc:
+        print(f"revert failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"revert committed: {new_sha}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="memgit", description="Agent memory you can diff, audit, and roll back")
     parser.add_argument("--config-file", default=None, help="explicit TOML config path (overrides memgit.toml lookup)")
@@ -260,6 +308,14 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("chat", help="chat with the agent; ends with a memory consolidation commit")
     recall_cmd = sub.add_parser("recall", help="preview the memory context block for a query")
     recall_cmd.add_argument("query", help="query text; quoted if it contains spaces")
+    log_cmd = sub.add_parser("log", help="list memory commits, newest first")
+    log_cmd.add_argument("--limit", type=int, default=None, metavar="N", help="max commits to show (default: [git].log_limit)")
+    diff_cmd = sub.add_parser("diff", help="show what a commit changed (diff vs parent)")
+    diff_cmd.add_argument("commit", help="full or abbreviated commit sha")
+    show_cmd = sub.add_parser("show", help="show one commit (message + patch)")
+    show_cmd.add_argument("commit", help="full or abbreviated commit sha")
+    revert_cmd = sub.add_parser("revert", help="roll back one session commit with a revert commit")
+    revert_cmd.add_argument("commit", help="full or abbreviated commit sha")
     return parser
 
 
@@ -282,15 +338,24 @@ def main(argv: Optional[List[str]] = None) -> int:
         cfg = bootstrap_settings(args.config_file, args.overrides)
     except ConfigError as exc:
         cfg = None
-        config_error = str(exc)
-        print(config_error, file=sys.stderr)
+        print(str(exc), file=sys.stderr)
     command = args.command
     if command == "doctor":
         return run_doctor(cfg)
+    if cfg is None:
+        return 2
     if command == "chat":
         return cmd_chat(cfg, args)
     if command == "recall":
         return cmd_recall(cfg, args)
+    if command == "log":
+        return cmd_log(cfg, args)
+    if command == "diff":
+        return cmd_diff(cfg, args)
+    if command == "show":
+        return cmd_show(cfg, args)
+    if command == "revert":
+        return cmd_revert(cfg, args)
     print(f"unknown command: {command}", file=sys.stderr)
     return 2
 

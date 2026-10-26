@@ -110,7 +110,6 @@ class MemorySettings(BaseModel):
     slug_strip_pattern: str
     max_recall_files: int
     max_recall_tokens: int
-    recall_template: str
     empty_memory_note: str
     token_count_method: str
 
@@ -184,12 +183,20 @@ class GitSettings(BaseModel):
     author_email: str
     timeout_s: float
     core_autocrlf: bool
+    log_limit: int
 
     @field_validator("timeout_s")
     @classmethod
     def _timeout(cls, v: float) -> float:
         if v <= 0:
             raise ValueError("git.timeout_s must be > 0")
+        return v
+
+    @field_validator("log_limit")
+    @classmethod
+    def _log_limit(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("git.log_limit must be >= 1")
         return v
 
     @model_validator(mode="after")
