@@ -6,6 +6,7 @@ logs/
 memory/
 bench/reports/
 bench/.viability/
+bench/.benchmark/
 memgit.toml
 *.egg-info/
 build/

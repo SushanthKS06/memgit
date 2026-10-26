@@ -1,4 +1,4 @@
-"""Answering turn of the chat loop: answer.md prompt + memory block + transcript."""
+"""Answering turn of the chat loop: configured answer prompt + memory block + transcript."""
 from __future__ import annotations
 
 from typing import List
