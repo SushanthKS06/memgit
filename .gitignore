@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+logs/
+memory/
+bench/reports/
+bench/.viability/
+memgit.toml
+*.egg-info/
+build/
+dist/

@@ -1,0 +1,91 @@
+# Memgit defaults. Every tunable lives here; code holds no default literals.
+# Layer precedence: CLI flags > MEMGIT_* env vars > ./memgit.toml > this file.
+# Env/CLI keys use double underscore nesting, e.g. MEMGIT_LLM__MODEL, --set llm.model=x
+
+[llm]
+base_url = ""                       # OpenAI-compatible root, e.g. "https://host/v1"; "" is invalid and doctor fails loudly
+api_key_env = "MEMGIT_API_KEY"      # NAME of the env var holding the key; never the key itself
+models_endpoint = "/models"         # discovery; full url = base_url + models_endpoint
+chat_endpoint = "/chat/completions" # full url = base_url + chat_endpoint
+auth_header_name = "Authorization"
+auth_header_template = "Bearer {key}"
+model = ""                          # "" => discover via models_endpoint and auto-select (documented heuristic in core/llm.py resolve_model)
+judge_model = ""                    # "" => auto-select largest-looking model
+model_preference_patterns = []      # regexes tried in order against model ids before the generic size heuristic
+timeout_s = 60.0
+max_retries = 2                     # network/5xx/429 retry budget per call
+backoff_s = 1.0                     # seconds; backoff is exponential (backoff_s * 2**attempt)
+temperature = 0.2                   # consolidation/answer
+judge_temperature = 0.0
+max_calls = 1000                    # per-process call budget guard
+json_retries = 1                    # retries after JSON validation failure, feeding the error back
+
+[prompts]
+consolidate = "consolidate.md"
+few_shots = "few_shots.json"
+fix_json = "fix_json.md"
+recall_select = "recall_select.md"
+recall_block = "context.md"
+
+[memory]
+dir = "./memory"                    # relative to cwd
+prompts_dir = ""                    # "" => package prompts dir (memgit/prompts)
+state_dir = ".memgit"               # inside memory dir; counters live here
+counter_file = "counters.json"
+index_file = "index.md"             # regenerated from file headers, never hand-edited
+header_prefix = "#"                 # memo header line: "<header_prefix> <header text>"
+active_heading = "## Active"        # exact heading line
+superseded_heading = "## Superseded"
+bullet = "-"
+id_open = "["
+id_close = "]"
+id_prefix = "mem-"
+field_sep = " | "
+source_prefix = "s:"
+turn_prefix = "t:"
+quote_char = "\""
+superseded_by_prefix = "superseded_by:"
+index_line_template = "- {header} -> {path}"
+max_ops_per_session = 8
+allowed_extensions = [".md"]
+max_path_depth = 3                  # relative path segments, e.g. projects/acme.md = 2
+slug_strip_pattern = "[^a-z0-9._/-]"
+max_recall_files = 3
+max_recall_tokens = 1200
+recall_template = "context.md"      # file under prompts dir used to render recalled context
+token_count_method = "words"        # "words" | "chars4"
+
+[verify]
+min_quote_chars = 12
+dup_similarity = 0.85
+normalise_rules = ["lowercase", "collapse_ws", "strip_edge_punct"]
+
+[recall]
+fallback_grep = true
+
+[git]
+author_name = "memgit agent"
+author_email = "memgit@example.com"
+
+[web]
+host = "127.0.0.1"
+port = 8377
+
+[mcp]
+server_name = "memgit"
+
+[logging]
+usage_log_path = "./logs/usage.jsonl"
+env_file = ".env"                   # loaded from cwd when present; keys never logged or printed
+
+[bench]
+scenarios_dir = "./bench/scenarios"
+transcripts_dir = "./bench/data"
+runs_per_scenario = 3
+output_dir = "./bench/reports"
+abstain_phrases_file = "./bench/data/abstain_phrases.json"
+transcript_seed = 422               # seed for synthetic transcript generation
+viability_memory_dir = "./bench/.viability/memory"   # scratch store wiped by bench/viability.py
+viability_transcripts = 20
+viability_min_json_valid = 0.9
+viability_min_verified = 0.8

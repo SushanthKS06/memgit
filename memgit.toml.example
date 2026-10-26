@@ -1,0 +1,20 @@
+Copy to memgit.toml in the working dir and edit. Every value here overrides
+memgit/defaults.toml; unset values keep package defaults.
+
+[llm]
+base_url = "https://your-openai-compatible-endpoint/v1"
+api_key_env = "MEMGIT_API_KEY"
+model = ""
+judge_model = ""
+model_preference_patterns = []
+
+[memory]
+dir = "./memory"
+# prompts_dir = "./my-prompts"
+
+[bench]
+runs_per_scenario = 3
+
+[web]
+host = "127.0.0.1"
+port = 8377

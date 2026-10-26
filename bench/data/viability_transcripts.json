@@ -1,0 +1,646 @@
+{
+  "seed": 422,
+  "generated_at": "2026-10-26T09:01:15.689089+00:00",
+  "sessions": [
+    {
+      "index": 1,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "what time is it"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "We decided the cronos rewrite will use the DuckDB stack."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "Important: I am allergic to sulfites; never suggest recipes containing it."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "hmm interesting"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "We decided the cronos rewrite will use the SQLite + NAS stack."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "My dog is called Kernel and he is a shepherd."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "anyway"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "I currently live in Osaka, so schedule anything to that timezone."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "For serious backend work my language of choice is OCaml, no exceptions."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "text": "My main editor is Kate; treat that as my default for all code work."
+        },
+        {
+          "turn": 8,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "anyway"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "For serious backend work my language of choice is C#, no exceptions."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "My dog is called Mango and he is a whippet."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "kind": "contradiction",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Change of plans: my backend language of choice is no longer C#; it is Python from now on."
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "lol ok"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "My main editor is Sublime Text; treat that as my default for all code work."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "hmm interesting"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "what time is it"
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "hey what's up"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "I currently live in Montevideo, so schedule anything to that timezone."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "ok cool"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "For serious backend work my language of choice is Go, no exceptions."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "We decided the auth rewrite will use the MariaDB + Memcached stack."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "kind": "contradiction",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Change of plans: my backend language of choice is no longer Python; it is Kotlin from now on."
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "what time is it"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "For serious backend work my language of choice is Haskell, no exceptions."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "My main editor is RustRover; treat that as my default for all code work."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        }
+      ]
+    },
+    {
+      "index": 12,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "ok cool"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "Important: I am allergic to lupin; never suggest recipes containing it."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    },
+    {
+      "index": 13,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "hey what's up"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "I currently live in Cork, so schedule anything to that timezone."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "My dog is called Nacho and he is a corgi."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        }
+      ]
+    },
+    {
+      "index": 14,
+      "kind": "noise",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "anyway"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "anyway"
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        }
+      ]
+    },
+    {
+      "index": 15,
+      "kind": "contradiction",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "Change of plans: my backend language of choice is no longer Go; it is Rust from now on."
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        }
+      ]
+    },
+    {
+      "index": 16,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "hey what's up"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Noted."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "My dog is called Bazel and he is a samoyed."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "My main editor is Neovim; treat that as my default for all code work."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "text": "We decided the cronos rewrite will use the EventStore stack."
+        },
+        {
+          "turn": 8,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        }
+      ]
+    },
+    {
+      "index": 17,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "hey what's up"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "For serious backend work my language of choice is TypeScript, no exceptions."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "My main editor is VS Code; treat that as my default for all code work."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "text": "Important: I am allergic to celery; never suggest recipes containing it."
+        },
+        {
+          "turn": 8,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    },
+    {
+      "index": 18,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "anyway"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Got it, recorded."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "My main editor is Helix; treat that as my default for all code work."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "My dog is called Pixel and he is a shiba inu."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "text": "We decided the payments rewrite will use the Cassandra stack."
+        },
+        {
+          "turn": 8,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        }
+      ]
+    },
+    {
+      "index": 19,
+      "kind": "add",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "thanks, that helps"
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Understood, I'll keep that in mind."
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "text": "My main editor is Zed; treat that as my default for all code work."
+        },
+        {
+          "turn": 4,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "text": "My dog is called Turbo and he is a dachshund."
+        },
+        {
+          "turn": 6,
+          "role": "assistant",
+          "text": "Okay, I'll remember that."
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "text": "For serious backend work my language of choice is Rust, no exceptions."
+        },
+        {
+          "turn": 8,
+          "role": "assistant",
+          "text": "Noted."
+        }
+      ]
+    },
+    {
+      "index": 20,
+      "kind": "contradiction",
+      "transcript": [
+        {
+          "turn": 1,
+          "role": "user",
+          "text": "FYI I no longer live in Osaka; I moved and now live in Tallinn."
+        },
+        {
+          "turn": 2,
+          "role": "assistant",
+          "text": "Sounds good, logged."
+        }
+      ]
+    }
+  ]
+}

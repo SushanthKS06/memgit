@@ -1,0 +1,40 @@
+{
+  "examples": [
+    {
+      "name": "add",
+      "turns": [
+        {"turn": 1, "role": "assistant", "text": "Hi! What would you like to work on today?"},
+        {"turn": 2, "role": "user", "text": "Remember: I absolutely despise meetings before 10am, so schedule me nothing before that time."},
+        {"turn": 3, "role": "assistant", "text": "Noted. Anything else today?"}
+      ],
+      "known_files": [],
+      "output": {"ops": [{"op": "add", "file": "work/hours.md", "text": "The user does not want meetings before 10am", "quote": "I absolutely despise meetings before 10am", "turn": 2, "supersedes": null, "confidence": 0.95}]}
+    },
+    {
+      "name": "new_file",
+      "turns": [
+        {"turn": 1, "role": "user", "text": "By the way, my dog is named Asphalt and she is a beagle."}
+      ],
+      "known_files": ["prefs.md", "work/hours.md"],
+      "output": {"ops": [{"op": "add", "file": "personal/pets.md", "text": "The user has a beagle dog named Asphalt", "quote": "my dog is named Asphalt and she is a beagle", "turn": 1, "supersedes": null, "confidence": 0.93}]}
+    },
+    {
+      "name": "supersede",
+      "turns": [
+        {"turn": 1, "role": "user", "text": "Heads up: we moved the deploy pipeline from Chaos to the Orchestrator tool last weekend."}
+      ],
+      "known_files": ["tools.md"],
+      "output": {"ops": [{"op": "supersede", "file": "tools.md", "text": "The user manages the deploy pipeline with the Orchestrator tool", "quote": "we moved the deploy pipeline from Chaos to the Orchestrator tool", "turn": 1, "supersedes": "mem-4", "confidence": 0.92}]}
+    },
+    {
+      "name": "noop",
+      "turns": [
+        {"turn": 1, "role": "user", "text": "hey what's up"},
+        {"turn": 2, "role": "assistant", "text": "Not much! What can I do for you today?"},
+        {"turn": 3, "role": "user", "text": "hmm nvm"}
+      ],
+      "known_files": ["prefs.md"],
+      "output": {"ops": [{"op": "noop", "file": "", "text": "", "quote": "", "turn": 1, "supersedes": null, "confidence": 1.0}]}
+    }
+  ]
+}

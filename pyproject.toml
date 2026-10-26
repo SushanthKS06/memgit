@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memgit"
+version = "0.1.0"
+description = "Agent memory you can diff, audit, and roll back"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+memgit = "memgit.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["memgit*"]
+
+[tool.setuptools.package-data]
+memgit = ["defaults.toml", "prompts/*.md", "prompts/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
