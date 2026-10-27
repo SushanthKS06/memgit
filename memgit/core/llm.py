@@ -302,7 +302,11 @@ class LLMClient:
             if response.status_code == 429 or response.status_code >= 500:
                 last_error = f"HTTP {response.status_code}: {_truncate(response.text)}"
                 if attempt < retries:
-                    _sleep_backoff(self.cfg.llm.backoff_s, attempt)
+                    delay = _parse_retry_delay(response)
+                    if delay is not None and delay > 0:
+                        time.sleep(delay)
+                    else:
+                        _sleep_backoff(self.cfg.llm.backoff_s, attempt)
                     continue
                 self._log_failure(purpose, time.monotonic() - started, last_error)
                 raise LLMError(
@@ -482,6 +486,25 @@ class LLMClient:
 def _sleep_backoff(base_s: float, attempt: int) -> None:
     if base_s > 0:
         time.sleep(base_s * (2 ** attempt))
+
+
+def _parse_retry_delay(response: httpx.Response) -> Optional[float]:
+    if response.status_code != 429:
+        return None
+    hdr = response.headers.get("retry-after")
+    if hdr:
+        try:
+            return max(0.5, float(hdr))
+        except ValueError:
+            pass
+    m = re.search(r"try again in (\d+(?:\.\d+)?)s", response.text, re.IGNORECASE)
+    if m:
+        try:
+            return float(m.group(1)) + 0.5
+        except ValueError:
+            pass
+    return None
+
 
 
 def _parse_models_payload(payload: Any, url: str) -> List[str]:
