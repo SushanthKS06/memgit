@@ -13,8 +13,8 @@ model = ""                          # "" => discover via models_endpoint and aut
 judge_model = ""                    # "" => auto-select largest-looking model
 model_preference_patterns = []      # regexes tried in order against model ids before the generic size heuristic
 timeout_s = 60.0
-max_retries = 2                     # network/5xx/429 retry budget per call
-backoff_s = 1.0                     # seconds; backoff is exponential (backoff_s * 2**attempt)
+max_retries = 3                     # network/5xx/429 retry budget per call
+backoff_s = 2.0                     # seconds; backoff is exponential (backoff_s * 2**attempt)
 temperature = 0.2                   # consolidation/answer
 judge_temperature = 0.0
 max_calls = 1000                    # per-process call budget guard
