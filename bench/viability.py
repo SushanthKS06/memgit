@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
+import stat
 import sys
 from collections import Counter
 from pathlib import Path
@@ -44,11 +46,22 @@ def to_turns(raw_transcript: List[Dict]) -> List[Turn]:
     ]
 
 
+def _wipe_scratch(root: Path) -> None:
+    """Windows-safe wipe: git marks .git/objects read-only; chmod + retry."""
+    if not root.exists():
+        return
+
+    def on_readonly(func, path, exc) -> None:
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+
+    shutil.rmtree(root, onexc=on_readonly)
+
+
 def run_gate(cfg: LoadedConfig, transcripts_path: Path) -> Dict:
     bench = cfg.settings.bench
     memory_root = Path(bench.viability_memory_dir)
-    if memory_root.exists():
-        shutil.rmtree(memory_root)
+    _wipe_scratch(memory_root)
     memory_root.mkdir(parents=True, exist_ok=True)
     sessions = load_transcripts(transcripts_path)
     client = LLMClient(cfg.settings, budget=BudgetCounter())
