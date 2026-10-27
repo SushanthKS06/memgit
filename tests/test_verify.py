@@ -1,7 +1,7 @@
 import pytest
 
 from memgit.config import Settings
-from memgit.core.consolidate import ProposedOp, Turn
+from memgit.core.consolidate import ROLE_ASSISTANT, ROLE_USER, ProposedOp, Turn
 from memgit.core.schema import MemoryLine
 from memgit.core.verify import (
     STATUS_ACCEPTED_ADD,
@@ -188,11 +188,33 @@ def test_normalise_rules_apply(settings_factory):
     assert "GINGER" != normalise("GINGER", s) or normalise("GINGER", s) == "ginger"
 
 
-def test_multiturn_affirmation_quote_accepted(settings_factory):
-    s = settings_factory()
+def test_no_substring_affirmation_in_words(settings_factory):
+    """(a) 'I need to look at the token budget' after an assistant turn must NOT count as affirmation."""
+    s = settings_factory("verify.allow_assistant_quotes=true")
     turns = [
-        Turn(turn=1, role="assistant", text="Would you like us to configure the cloud runner in us-east-1?"),
-        Turn(turn=2, role="user", text="Yes, exactly, sounds good!"),
+        Turn(turn=1, role=ROLE_ASSISTANT, text="Would you like us to configure the cloud runner in us-east-1?"),
+        Turn(turn=2, role=ROLE_USER, text="I need to look at the token budget"),
+    ]
+    verifier = Verifier(s, turns=turns, active_entries=[])
+    op = ProposedOp(
+        op="add",
+        file="infra.md",
+        text="Cloud runner is in us-east-1",
+        quote="configure the cloud runner in us-east-1",
+        turn=1,
+        confidence=0.9,
+    )
+    verdict = verifier.verify_op(op)
+    assert verdict.status == STATUS_REJECTED
+    assert verdict.reason.startswith("quote_not_found")
+
+
+def test_assistant_quote_with_flag_on_and_affirmation(settings_factory):
+    """(b) with the flag on, 'yes, that's right' DOES count as affirmation."""
+    s = settings_factory("verify.allow_assistant_quotes=true")
+    turns = [
+        Turn(turn=1, role=ROLE_ASSISTANT, text="Would you like us to configure the cloud runner in us-east-1?"),
+        Turn(turn=2, role=ROLE_USER, text="yes, that's right"),
     ]
     verifier = Verifier(s, turns=turns, active_entries=[])
     op = ProposedOp(
@@ -206,3 +228,48 @@ def test_multiturn_affirmation_quote_accepted(settings_factory):
     verdict = verifier.verify_op(op)
     assert verdict.status == STATUS_ACCEPTED_ADD
     assert verdict.corrected_turn == 2
+
+
+def test_assistant_quote_with_flag_off_rejected(settings_factory):
+    """(c) with the flag off (default), assistant quotes are always rejected."""
+    s = settings_factory()
+    assert s.verify.allow_assistant_quotes is False
+    turns = [
+        Turn(turn=1, role=ROLE_ASSISTANT, text="Would you like us to configure the cloud runner in us-east-1?"),
+        Turn(turn=2, role=ROLE_USER, text="yes, that's right, exactly"),
+    ]
+    verifier = Verifier(s, turns=turns, active_entries=[])
+    op = ProposedOp(
+        op="add",
+        file="infra.md",
+        text="Cloud runner is in us-east-1",
+        quote="configure the cloud runner in us-east-1",
+        turn=1,
+        confidence=0.9,
+    )
+    verdict = verifier.verify_op(op)
+    assert verdict.status == STATUS_REJECTED
+    assert verdict.reason.startswith("quote_not_found")
+
+
+def test_user_quote_accepted_with_turn_autocorrection(settings_factory):
+    """(d) a user quote is still accepted with turn auto-correction."""
+    s = settings_factory()
+    turns = [
+        Turn(turn=1, role=ROLE_USER, text="Hello there, nice to meet you."),
+        Turn(turn=2, role=ROLE_ASSISTANT, text="Hello! How can I help you?"),
+        Turn(turn=3, role=ROLE_USER, text="I exclusively drink ginger tea during winter."),
+    ]
+    verifier = Verifier(s, turns=turns, active_entries=[])
+    op = ProposedOp(
+        op="add",
+        file="prefs.md",
+        text="The user drinks ginger tea in winter",
+        quote="I exclusively drink ginger tea during winter",
+        turn=1,  # Claimed turn 1, but actual quote is in turn 3
+        confidence=0.9,
+    )
+    verdict = verifier.verify_op(op)
+    assert verdict.status == STATUS_ACCEPTED_ADD
+    assert verdict.corrected_turn == 3
+

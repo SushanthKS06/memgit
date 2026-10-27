@@ -62,6 +62,13 @@ token_count_method = "words"        # "words" | "chars4"
 min_quote_chars = 12
 dup_similarity = 0.85
 normalise_rules = ["lowercase", "collapse_ws", "strip_edge_punct"]
+allow_assistant_quotes = false
+affirmations = [
+    "yes", "yeah", "yep", "sure", "agree", "correct", "exactly",
+    "sounds good", "do that", "let's do it", "approved", "ok",
+    "okay", "perfect", "right", "confirmed",
+]
+
 
 [recall]
 fallback_grep = true

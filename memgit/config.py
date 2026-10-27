@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 
 class ConfigError(ValueError):
@@ -144,6 +144,8 @@ class VerifySettings(BaseModel):
     min_quote_chars: int
     dup_similarity: float
     normalise_rules: List[str]
+    allow_assistant_quotes: bool = False
+    affirmations: List[str] = Field(default_factory=list)
 
     @field_validator("normalise_rules")
     @classmethod

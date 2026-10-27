@@ -12,12 +12,18 @@ from memgit.core.llm import LLMClient, LLMError, LoadPrompt
 from memgit.core.schema import MemoryLine, format_line
 
 
+ROLE_USER = "user"
+ROLE_ASSISTANT = "assistant"
+Role = Literal["user", "assistant"]
+
+
 class Turn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     turn: int
-    role: Literal["user", "assistant"]
+    role: Role
     text: str
+
 
 
 class ProposedOp(BaseModel):
@@ -54,7 +60,7 @@ class FewShotFile(BaseModel):
 
 
 def render_transcript(turns: List[Turn], settings: Settings) -> str:
-    labels = {"user": "USER", "assistant": "ASSISTANT"}
+    labels = {ROLE_USER: "USER", ROLE_ASSISTANT: "ASSISTANT"}
     return "\n".join(f"[t{turn.turn}] {labels[turn.role]}: {turn.text}" for turn in turns)
 
 

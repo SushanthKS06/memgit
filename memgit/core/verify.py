@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import difflib
+import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence, Tuple
 
 from memgit.config import Settings
-from memgit.core.consolidate import ProposedOp, Turn
+from memgit.core.consolidate import ROLE_ASSISTANT, ROLE_USER, ProposedOp, Turn
 from memgit.core.schema import MemoryLine, PathError, check_rel_path
 
 STATUS_ACCEPTED_ADD = "accepted_add"
@@ -59,7 +60,7 @@ class Verifier:
     ) -> None:
         self.cfg = settings
         self.turns = list(turns)
-        self.user_turns = [(t.turn, t.text) for t in self.turns if t.role == "user"]
+        self.user_turns = [(t.turn, t.text) for t in self.turns if t.role == ROLE_USER]
         self.active_entries = list(active_entries)
         self.active_by_id = {line.id: (rel, line) for rel, line in self.active_entries}
         self._accepted_count = 0
@@ -141,21 +142,20 @@ class Verifier:
                 self._corrected_turn = idx
                 return None
         # Multi-turn grounding: allow assistant quote if immediately affirmed by the user
-        turns_by_num = {t.turn: t for t in self.turns}
-        for turn_idx, turn in turns_by_num.items():
-            if turn.role == "assistant" and norm_quote in normalise(turn.text, self.cfg):
-                next_turn = turns_by_num.get(turn_idx + 1)
-                if next_turn and next_turn.role == "user":
-                    norm_user = normalise(next_turn.text, self.cfg)
-                    affirmations = (
-                        "yes", "yeah", "yep", "sure", "agree", "correct", "exactly",
-                        "sounds good", "do that", "let's do it", "approved", "ok",
-                        "okay", "perfect", "right", "confirmed"
-                    )
-                    words = set(norm_user.split())
-                    if any(aff in words or aff in norm_user for aff in affirmations):
-                        self._corrected_turn = next_turn.turn
-                        return None
+        if self.cfg.verify.allow_assistant_quotes:
+            turns_by_num = {t.turn: t for t in self.turns}
+            for turn_idx, turn in turns_by_num.items():
+                if turn.role == ROLE_ASSISTANT and norm_quote in normalise(turn.text, self.cfg):
+                    next_turn = turns_by_num.get(turn_idx + 1)
+                    if next_turn and next_turn.role == ROLE_USER:
+                        norm_user = normalise(next_turn.text, self.cfg)
+                        for aff in self.cfg.verify.affirmations:
+                            norm_aff = normalise(aff, self.cfg)
+                            if not norm_aff:
+                                continue
+                            if re.search(rf"\b{re.escape(norm_aff)}\b", norm_user):
+                                self._corrected_turn = next_turn.turn
+                                return None
         return "quote_not_found: quote is not a verbatim substring of any user turn"
 
     def _duplicate_check(self, text: str, exclude: Optional[str] = None) -> Optional[str]:

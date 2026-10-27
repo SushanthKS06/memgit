@@ -40,6 +40,8 @@ FORBIDDEN = [
     "commit_message.md",     # prompts.commit_message
     "judge_recall.md",       # prompts.judge_recall
     "different context md fallback",
+    "sounds good",           # verify.affirmations entry
+    "let's do it",           # verify.affirmations entry
 ]
 
 
