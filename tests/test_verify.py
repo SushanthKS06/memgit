@@ -186,3 +186,23 @@ def test_normalise_rules_apply(settings_factory):
     s = settings_factory()
     assert normalise("  Mixed   CASE!!  ", s) == "mixed case"
     assert "GINGER" != normalise("GINGER", s) or normalise("GINGER", s) == "ginger"
+
+
+def test_multiturn_affirmation_quote_accepted(settings_factory):
+    s = settings_factory()
+    turns = [
+        Turn(turn=1, role="assistant", text="Would you like us to configure the cloud runner in us-east-1?"),
+        Turn(turn=2, role="user", text="Yes, exactly, sounds good!"),
+    ]
+    verifier = Verifier(s, turns=turns, active_entries=[])
+    op = ProposedOp(
+        op="add",
+        file="infra.md",
+        text="Cloud runner is in us-east-1",
+        quote="configure the cloud runner in us-east-1",
+        turn=1,
+        confidence=0.9,
+    )
+    verdict = verifier.verify_op(op)
+    assert verdict.status == STATUS_ACCEPTED_ADD
+    assert verdict.corrected_turn == 2

@@ -5,6 +5,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from memgit.config import Settings
 from memgit.core.store import MemoryStore
 from memgit.web.server import build_server
 
@@ -32,7 +33,7 @@ def running_servers():
 
 @pytest.fixture()
 def make_env(settings_factory, tmp_path: Path, running_servers):
-    def build(commit_count: int = 1, rejections=None) -> tuple[httpx.Client, "Settings"]:
+    def build(commit_count: int = 1, rejections=None) -> tuple[httpx.Client, Settings]:
         settings = settings_factory(f"logging.rejections_log_path={tmp_path / 'rej.jsonl'}")
         mem = Path(settings.memory.dir)
         store = MemoryStore(settings)
@@ -147,3 +148,33 @@ def test_unknown_route(make_env):
     response = client.get("/definitely/not/a/route")
     assert response.status_code == 404
     assert "no route" in response.text
+
+
+def test_api_endpoints(make_env):
+    client, settings = make_env(commit_count=2)
+    # Test /api/history
+    resp = client.get("/api/history")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("application/json")
+    commits = resp.json()
+    assert len(commits) == 2
+    assert "sha" in commits[0] and "subject" in commits[0]
+
+    # Test /api/commit/<sha>
+    sha = commits[0]["short_sha"]
+    resp_commit = client.get(f"/api/commit/{sha}")
+    assert resp_commit.status_code == 200
+    data = resp_commit.json()
+    assert "diff" in data and "subject" in data
+
+    # Test /api/memories
+    resp_mem = client.get("/api/memories")
+    assert resp_mem.status_code == 200
+    mem_files = resp_mem.json()
+    assert len(mem_files) >= 1
+    assert "active_count" in mem_files[0]
+
+    # Test /api/rejections
+    resp_rej = client.get("/api/rejections")
+    assert resp_rej.status_code == 200
+    assert isinstance(resp_rej.json(), list)

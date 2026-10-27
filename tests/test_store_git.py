@@ -95,3 +95,41 @@ def test_rejections_jsonl_appends(settings_factory, tmp_path: Path):
     assert first["session_id"] == "sess-9"
     assert first["reason"] == "bad_path: oops"
     assert first["op"]["file"] == "b.md"
+
+
+def test_compact_prunes_superseded(store: MemoryStore):
+    from memgit.core.schema import MemoryFileContent, format_memory_file
+
+    line_act = MemoryLine(id="mem-2", fact="Active fact", session="mem-sess2", turn=1, quote="quote here")
+    line_sup = MemoryLine(id="mem-1", fact="Old fact", session="mem-sess1", turn=1, quote="old quote", superseded_by="mem-2")
+    content = MemoryFileContent(header="notes", active=[line_act], superseded=[line_sup])
+    (store.root / "notes.md").write_text(format_memory_file(content, store.cfg), encoding="utf-8")
+
+    store.begin_session()
+    store.commit_all("initial session")
+    store.finish_session()
+
+    removed, sha = store.compact()
+    assert removed == 1
+    assert len(sha) >= 7
+
+    commits = store.log(5)
+    assert len(commits) == 2
+    assert "compact" in commits[0].subject
+
+    text = (store.root / "notes.md").read_text(encoding="utf-8")
+    assert "mem-1" not in text
+    assert "mem-2" in text
+
+    # Second compaction is a no-op
+    removed2, sha2 = store.compact()
+    assert removed2 == 0
+    assert sha2 == ""
+
+
+def test_store_lock_reentrant(store: MemoryStore):
+    with store.lock():
+        with store.lock():
+            assert store.lock()._depth == 2
+        assert store.lock()._depth == 1
+    assert store.lock()._depth == 0

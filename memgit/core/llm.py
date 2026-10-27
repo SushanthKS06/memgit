@@ -12,7 +12,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Type, TypeVar
 
 import httpx
 from pydantic import BaseModel, ValidationError
@@ -346,6 +346,65 @@ class LLMClient:
             self.usage.add(reply)
             return reply
         raise LLMError(f"chat failed after retries: {last_error}")  # pragma: no cover - defensive
+
+    def chat_stream(
+        self,
+        messages: Sequence[Dict[str, str]],
+        purpose: str,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+    ) -> Iterator[str]:
+        """Stream chat completion chunks via server-sent events."""
+        if model is None:
+            model = self.resolve_model("consolidation")
+        payload: Dict[str, Any] = {
+            "model": model,
+            "messages": list(messages),
+            "temperature": self.cfg.llm.temperature if temperature is None else temperature,
+            "stream": True,
+        }
+        url = self.base_url + self.cfg.llm.chat_endpoint
+        started = time.monotonic()
+        self.budget.try_call(self.cfg.llm.max_calls)
+        accumulated: List[str] = []
+        try:
+            with self._http.stream("POST", url, headers=self._headers, json=payload) as response:
+                if response.status_code >= 400:
+                    response.read()
+                    raise LLMError(f"chat stream got HTTP {response.status_code} from {url}: {_truncate(response.text)}")
+                for line in response.iter_lines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if line.startswith("data: "):
+                        data_str = line[6:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            chunk_json = json.loads(data_str)
+                            delta = chunk_json.get("choices", [{}])[0].get("delta", {})
+                            content = delta.get("content", "")
+                            if content:
+                                accumulated.append(content)
+                                yield content
+                        except (json.JSONDecodeError, KeyError, IndexError):
+                            continue
+        except (httpx.HTTPError, LLMError) as exc:
+            self._log_failure(purpose, time.monotonic() - started, str(exc))
+            raise LLMError(f"chat stream failed: {exc}") from exc
+        full_text = "".join(accumulated)
+        latency = time.monotonic() - started
+        prompt_est = sum(len(m.get("content", "").split()) for m in messages)
+        comp_est = len(full_text.split())
+        self._log_reply(purpose, model, latency, prompt_est, comp_est, "")
+        reply = ChatReply(
+            content=full_text,
+            model=model,
+            prompt_tokens=prompt_est,
+            completion_tokens=comp_est,
+            latency_s=latency,
+        )
+        self.usage.add(reply)
 
     def chat_json(
         self,

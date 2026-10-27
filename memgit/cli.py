@@ -210,12 +210,23 @@ def cmd_chat(cfg: LoadedConfig, args: argparse.Namespace) -> int:
         except LLMError as exc:
             print(f"[recall unavailable: {exc}]", file=sys.stderr)
             memory_block = ""
+        reply = ""
+        stream_chunks: List[str] = []
         try:
-            reply = answerer.answer(candidate, memory_block)
-        except LLMError as exc:
-            print(f"[answer failed: {exc}]", file=sys.stderr)
-            continue
-        print(reply)
+            for chunk in answerer.answer_stream(candidate, memory_block):
+                sys.stdout.write(chunk)
+                sys.stdout.flush()
+                stream_chunks.append(chunk)
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+            reply = "".join(stream_chunks)
+        except (LLMError, Exception):
+            try:
+                reply = answerer.answer(candidate, memory_block)
+                print(reply)
+            except LLMError as exc:
+                print(f"[answer failed: {exc}]", file=sys.stderr)
+                continue
         transcript = candidate + [Turn(turn=len(candidate) + 1, role="assistant", text=reply)]
     if not transcript:
         print("no turns; nothing to consolidate")
@@ -315,6 +326,22 @@ def cmd_revert(cfg: LoadedConfig, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_compact(cfg: LoadedConfig, args: argparse.Namespace) -> int:
+    from memgit.core.store import MemoryStore, StoreError
+
+    store = MemoryStore(cfg.settings)
+    try:
+        removed, sha = store.compact()
+    except StoreError as exc:
+        print(f"compact failed: {exc}", file=sys.stderr)
+        return 1
+    if removed == 0:
+        print("no superseded memories to compact")
+        return 0
+    print(f"compacted {removed} superseded entries; commit {sha}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="memgit", description="Agent memory you can diff, audit, and roll back")
     parser.add_argument("--config-file", default=None, help="explicit TOML config path (overrides memgit.toml lookup)")
@@ -333,6 +360,8 @@ def build_parser() -> argparse.ArgumentParser:
     show_cmd.add_argument("commit", help="full or abbreviated commit sha")
     revert_cmd = sub.add_parser("revert", help="roll back one session commit with a revert commit")
     revert_cmd.add_argument("commit", help="full or abbreviated commit sha")
+    sub.add_parser("compact", help="prune superseded memory entries and create a compaction commit")
+    sub.add_parser("gc", help="alias for compact")
     sub.add_parser("serve", help="run the MCP stdio server (JSON-RPC over stdin/stdout)")
     sub.add_parser("web", help="serve the memgit web UI (history, patches, one-click revert)")
     return parser
@@ -375,6 +404,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return cmd_show(cfg, args)
     if command == "revert":
         return cmd_revert(cfg, args)
+    if command in ("compact", "gc"):
+        return cmd_compact(cfg, args)
     if command == "serve":
         return cmd_serve(cfg, args)
     if command == "web":

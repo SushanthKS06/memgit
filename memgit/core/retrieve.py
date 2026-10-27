@@ -58,7 +58,7 @@ class Recaller:
 
     def recall(self, query: str) -> RecallResult:
         files = self._select_files(query)
-        lines = self._active_lines(files)
+        lines = self._active_lines(files, query=query)
         block = self._render_block(lines)
         tokens = count_tokens(block, self.cfg)
         return RecallResult(
@@ -128,28 +128,48 @@ class Recaller:
                 hits.append(rel)
         return hits
 
-    def _active_lines(self, files: List[str]) -> List[Tuple[str, MemoryLine]]:
+    def _active_lines(self, files: List[str], query: str = "") -> List[Tuple[str, MemoryLine]]:
         budget = self.cfg.memory.max_recall_tokens
         self._truncated = False
         by_rel = {rel: content for rel, content in iter_memory_files(Path(self.cfg.memory.dir), self.cfg)}
-        used = 0
-        limit_inserted = False
-        out: List[Tuple[str, MemoryLine]] = []
+        candidates: List[Tuple[int, str, MemoryLine, int]] = []
+        order_idx = 0
+        tokens = [
+            tok.lower()
+            for tok in query.split()
+            if len(tok) >= self.cfg.recall.grep_min_token
+        ]
         for rel in files:
             content = by_rel.get(rel)
             if content is None:
                 continue
             for line in content.active:
                 line_tokens = count_tokens(format_line(line, self.cfg), self.cfg)
-                if used + line_tokens > budget:
-                    self._truncated = True
-                    limit_inserted = True
-                    break
-                out.append((rel, line))
-                used += line_tokens
-            if limit_inserted:
-                break
-        return out
+                text_to_match = f"{line.fact} {line.quote}".lower()
+                relevance = sum(1 for tok in tokens if tok in text_to_match) if tokens else 0
+                candidates.append((relevance, rel, line, line_tokens))
+                order_idx += 1
+
+        # Sort by relevance descending, preserving appearance order for ties
+        # Store index to preserve stable original order for final presentation
+        indexed_candidates = list(enumerate(candidates))
+        ranked = sorted(
+            indexed_candidates,
+            key=lambda item: (-item[1][0], item[0]),
+        )
+
+        used = 0
+        selected_indexed: List[Tuple[int, str, MemoryLine]] = []
+        for orig_idx, (rel_score, rel, line, line_tokens) in ranked:
+            if used + line_tokens > budget:
+                self._truncated = True
+                continue
+            selected_indexed.append((orig_idx, rel, line))
+            used += line_tokens
+
+        # Restore natural document order for the block presentation
+        selected_indexed.sort(key=lambda item: item[0])
+        return [(rel, line) for _, rel, line in selected_indexed]
 
     def _render_block(self, lines: List[Tuple[str, MemoryLine]]) -> str:
         mem = self.cfg.memory

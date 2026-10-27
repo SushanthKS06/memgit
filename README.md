@@ -31,6 +31,7 @@ python -m memgit.cli log                          # memory commit history
 python -m memgit.cli diff <sha>                   # what a session stored
 python -m memgit.cli show <sha>                   # full message + patch
 python -m memgit.cli revert <sha>                 # undo a bad session (creates a revert commit)
+python -m memgit.cli compact                      # prune superseded entries (alias: 'gc')
 ```
 
 `memgit chat` is the primary loop: every turn recalls relevant memory, answers
@@ -74,14 +75,13 @@ Stdin/stdout MCP server (JSON-RPC, protocol `2024-11-05`), tools:
 Register it in any MCP client with a stdio command like
 `python -m memgit.cli serve` (cwd = your project).
 
-## Web UI
+## Web UI & REST API
 
 ```pwsh
 python -m memgit.cli web          # binds [web] host/port (default 127.0.0.1:8377)
 ```
 
-History with per-commit patch pages and one-click **revert** buttons, memory
-overview, and the rejections audit page.
+Modern dark-mode UI with live search filtering, syntax-colored diffs, per-commit patch pages with one-click **revert** buttons, memory cards, rejections audit page, and built-in JSON REST API endpoints (`/api/history`, `/api/commit/<sha>`, `/api/memories`, `/api/rejections`).
 
 ## Benchmarks (honesty policy: no cherry-picking, no hardcoding)
 
