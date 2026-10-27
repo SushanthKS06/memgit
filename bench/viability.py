@@ -11,7 +11,7 @@ import shutil
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from memgit.cli import bootstrap_settings
 from memgit.config import ConfigError, LoadedConfig
@@ -143,14 +143,79 @@ def render_report(report: Dict) -> str:
     return "\n".join(lines)
 
 
-def write_report(cfg: LoadedConfig, report: Dict) -> Path:
+def render_markdown_report(report: Dict) -> str:
+    lines = [
+        "# Memgit Viability Report",
+        "",
+        f"**Verdict**: {'PASS' if report['passed'] else 'FAIL'}",
+        "",
+        "## Summary",
+        "",
+        f"- **Transcripts File**: `{report['transcripts_file']}`",
+        f"- **Memory Dir**: `{report['memory_dir']}`",
+        f"- **Sessions Total**: {report['sessions_total']}",
+        f"- **Sessions Consolidated**: {report['sessions_consolidated']}",
+        f"- **Sessions Used JSON Retry**: {report['sessions_used_json_retry']}",
+        f"- **Sessions Not Consolidated**: {report['sessions_not_consolidated']}",
+        "",
+        "## Viability Gate Metrics",
+        "",
+        "| Metric | Value | Minimum Required | Status |",
+        "| --- | --- | --- | --- |",
+        f"| JSON-valid rate | {report['json_valid_rate']:.4f} ({report['json_valid_rate']:.1%}) | {report['thresholds']['min_json_valid']:.1%} | {'PASS' if report['json_valid_rate'] >= report['thresholds']['min_json_valid'] else 'FAIL'} |",
+        f"| Verified-op rate | {report['verified_op_rate']:.4f} ({report['verified_op_rate']:.1%}) | {report['thresholds']['min_verified']:.1%} | {'PASS' if report['verified_op_rate'] >= report['thresholds']['min_verified'] else 'FAIL'} |",
+        "",
+        "## Proposed Operations",
+        "",
+        f"- **Accepted Adds**: {report['ops_accepted_add']}",
+        f"- **Accepted Supersedes**: {report['ops_accepted_supersede']}",
+        f"- **Total Rejected**: {report['ops_rejected_total']}",
+        f"- **No-op Verdicts**: {report['noop_verdicts']}",
+        "",
+        "### Rejections by Reason",
+        "",
+    ]
+    rejections = report.get("rejected_by_reason", {})
+    if rejections:
+        lines.append("| Reason | Count |")
+        lines.append("| --- | --- |")
+        for reason, count in sorted(rejections.items()):
+            lines.append(f"| `{reason}` | {count} |")
+    else:
+        lines.append("*(no operations were rejected)*")
+    lines.extend([
+        "",
+        "## LLM Usage",
+        "",
+        f"- **Calls**: {report['llm_calls']} (Failures: {report['llm_failures']})",
+        f"- **Prompt Tokens**: {report['prompt_tokens']}",
+        f"- **Completion Tokens**: {report['completion_tokens']}",
+        f"- **Total Tokens**: {report['prompt_tokens'] + report['completion_tokens']}",
+        f"- **Usage Log**: `{report['usage_log']}`",
+    ])
+    if report.get("failed_sessions"):
+        lines.extend([
+            "",
+            "## Failed Sessions",
+            "",
+        ])
+        for fail in report["failed_sessions"]:
+            lines.append(f"- {fail}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def write_report(cfg: LoadedConfig, report: Dict) -> Tuple[Path, Path]:
     out_dir = Path(cfg.settings.bench.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    path = out_dir / "viability.json"
-    with path.open("w", encoding="utf-8") as fh:
+    json_path = out_dir / "viability.json"
+    with json_path.open("w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2)
         fh.write("\n")
-    return path
+    md_path = out_dir / "viability.md"
+    with md_path.open("w", encoding="utf-8") as fh:
+        fh.write(render_markdown_report(report))
+    return json_path, md_path
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -181,8 +246,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("hint: run 'memgit doctor' to diagnose config/api issues", file=sys.stderr)
         return 2
     print(render_report(report))
-    path = write_report(cfg, report)
-    print(f"report written: {path}")
+    json_path, md_path = write_report(cfg, report)
+    print(f"reports written: {json_path} and {md_path}")
     return 0 if report["passed"] else 1
 
 

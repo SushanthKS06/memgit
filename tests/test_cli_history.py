@@ -145,3 +145,24 @@ def test_config_error_guards_non_doctor_commands(tmp_path: Path, capsys):
     err = capsys.readouterr().err
     assert rc == 2
     assert err
+
+
+def test_doctor_chat_and_json_sanity():
+    from unittest.mock import MagicMock
+    from memgit.cli import check_chat_sanity, check_json_sanity
+    from memgit.core.llm import ChatReply
+
+    client = MagicMock()
+    client.chat.return_value = ChatReply(content="pong", model="test-model", prompt_tokens=5, completion_tokens=2, latency_s=0.1)
+    client.chat_json.return_value = (MagicMock(status="ok"), False)
+
+    chat_row = check_chat_sanity(client)
+    assert chat_row.name == "chat sanity"
+    assert chat_row.status == "ok"
+    assert "test-model" in chat_row.detail
+
+    json_row = check_json_sanity(client)
+    assert json_row.name == "json sanity"
+    assert json_row.status == "ok"
+    assert "ok" in json_row.detail
+

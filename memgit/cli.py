@@ -11,7 +11,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
+from pydantic import BaseModel
+
 from memgit.config import ConfigError, LoadedConfig, load_env_file, load_settings
+from memgit.core.consolidate import ROLE_USER
 from memgit.core.llm import BudgetCounter, LLMClient, LLMError
 from memgit.core.schema import ensure_layout
 
@@ -137,6 +140,31 @@ def check_discovery(cfg: LoadedConfig, client: LLMClient) -> List[CheckRow]:
     return rows
 
 
+class DoctorSanityJson(BaseModel):
+    status: str
+
+
+def check_chat_sanity(client: LLMClient) -> CheckRow:
+    try:
+        reply = client.chat([{"role": ROLE_USER, "content": "respond with 'pong'"}], purpose="doctor_ping")
+        return CheckRow("chat sanity", "ok", f"replied in {reply.latency_s:.2f}s ({reply.model})")
+    except Exception as exc:
+        return CheckRow("chat sanity", "fail", str(exc))
+
+
+def check_json_sanity(client: LLMClient) -> CheckRow:
+    try:
+        res, used_retry = client.chat_json(
+            [{"role": ROLE_USER, "content": 'Output strict JSON only: {"status": "ok"}'}],
+            schema=DoctorSanityJson,
+            purpose="doctor_json",
+        )
+        retry_note = " (used retry)" if used_retry else ""
+        return CheckRow("json sanity", "ok", f"valid (status={res.status!r}{retry_note})")
+    except Exception as exc:
+        return CheckRow("json sanity", "fail", str(exc))
+
+
 def print_table(rows: List[CheckRow]) -> None:
     name_w = max(len(r.name) for r in rows)
     status_w = max(len(r.status) for r in rows)
@@ -163,6 +191,8 @@ def run_doctor(cfg: Optional[LoadedConfig]) -> int:
         rows.append(CheckRow("api endpoint", "fail", f"skipped: {cfg.settings.llm.api_key_env!r} missing"))
         rows.append(CheckRow("models", "fail", "skipped: api key missing"))
         rows.append(CheckRow("model selection", "fail", "skipped: api key missing"))
+        rows.append(CheckRow("chat sanity", "fail", "skipped: api key missing"))
+        rows.append(CheckRow("json sanity", "fail", "skipped: api key missing"))
     else:
         try:
             client = LLMClient(cfg.settings)
@@ -170,8 +200,17 @@ def run_doctor(cfg: Optional[LoadedConfig]) -> int:
             rows.append(CheckRow("api endpoint", "fail", str(exc)))
             rows.append(CheckRow("models", "fail", "skipped: client init failed"))
             rows.append(CheckRow("model selection", "fail", "skipped: client init failed"))
+            rows.append(CheckRow("chat sanity", "fail", "skipped: client init failed"))
+            rows.append(CheckRow("json sanity", "fail", "skipped: client init failed"))
         else:
-            rows.extend(check_discovery(cfg, client))
+            disc_rows = check_discovery(cfg, client)
+            rows.extend(disc_rows)
+            if any(r.status == "fail" for r in disc_rows):
+                rows.append(CheckRow("chat sanity", "fail", "skipped: discovery or model selection failed"))
+                rows.append(CheckRow("json sanity", "fail", "skipped: discovery or model selection failed"))
+            else:
+                rows.append(check_chat_sanity(client))
+                rows.append(check_json_sanity(client))
     has_fail = any(row.status == "fail" for row in rows)
     print_table(rows)
     return 1 if has_fail else 0

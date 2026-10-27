@@ -200,3 +200,43 @@ def test_benchmark_session_failure_recorded(bench_env):
     # probes still get scored on empty memory; abstain answer keeps judge out
     assert report["results"]["probes_scored"] == 1
     assert report["results"]["reverified_rate"] == 0.0
+
+
+def test_viability_write_report_markdown_and_json(tmp_path, settings_factory):
+    from bench.viability import write_report as viability_write_report
+
+    s = settings_factory(f"bench.output_dir={tmp_path}")
+    cfg = LoadedConfig(settings=s, layers=[])
+    fake_report = {
+        "transcripts_file": "test_transcripts.json",
+        "memory_dir": "test_mem",
+        "sessions_total": 5,
+        "sessions_consolidated": 5,
+        "sessions_not_consolidated": 0,
+        "sessions_used_json_retry": 1,
+        "json_valid_rate": 1.0,
+        "verified_op_rate": 0.85,
+        "ops_accepted_add": 3,
+        "ops_accepted_supersede": 1,
+        "ops_rejected_total": 1,
+        "rejected_by_reason": {"quote_not_found": 1},
+        "noop_verdicts": 0,
+        "llm_calls": 6,
+        "llm_failures": 0,
+        "prompt_tokens": 1200,
+        "completion_tokens": 400,
+        "usage_log": "test_usage.jsonl",
+        "thresholds": {"min_json_valid": 0.9, "min_verified": 0.8},
+        "failed_sessions": [],
+        "passed": True,
+    }
+    json_path, md_path = viability_write_report(cfg, fake_report)
+    assert json_path.is_file()
+    assert md_path.is_file()
+    md_content = md_path.read_text(encoding="utf-8")
+    assert "# Memgit Viability Report" in md_content
+    assert "JSON-valid rate" in md_content
+    assert "Verified-op rate" in md_content
+    assert "quote_not_found" in md_content
+    assert "PASS" in md_content
+
