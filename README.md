@@ -157,8 +157,3 @@ memgit/
 bench/     gen_data, viability gate, recovery benchmark
 ```
 
-## Honesty receipts
-
-- Entire suite runs offline (mocked transports); real-LLM parity requires credentials — nothing faked.
-- `memgit.toml.example` shows the endpoint/key flow for custom providers.
-- Git history equals product history: every design phase landed as one commit.
