@@ -149,13 +149,31 @@ class Verifier:
                     next_turn = turns_by_num.get(turn_idx + 1)
                     if next_turn and next_turn.role == ROLE_USER:
                         norm_user = normalise(next_turn.text, self.cfg)
-                        for aff in self.cfg.verify.affirmations:
-                            norm_aff = normalise(aff, self.cfg)
-                            if not norm_aff:
-                                continue
-                            if re.search(rf"\b{re.escape(norm_aff)}\b", norm_user):
-                                self._corrected_turn = next_turn.turn
-                                return None
+                        # Negation check: if any negation word appears in the user turn,
+                        # reject this grounding (even if an affirmation is also present).
+                        negations = self.cfg.verify.negations
+                        if negations:
+                            for neg in negations:
+                                norm_neg = normalise(neg, self.cfg)
+                                if norm_neg and re.search(rf"\b{re.escape(norm_neg)}\b", norm_user):
+                                    break
+                            else:
+                                # No negation found; check affirmations
+                                for aff in self.cfg.verify.affirmations:
+                                    norm_aff = normalise(aff, self.cfg)
+                                    if not norm_aff:
+                                        continue
+                                    if re.search(rf"\b{re.escape(norm_aff)}\b", norm_user):
+                                        self._corrected_turn = next_turn.turn
+                                        return None
+                        else:
+                            for aff in self.cfg.verify.affirmations:
+                                norm_aff = normalise(aff, self.cfg)
+                                if not norm_aff:
+                                    continue
+                                if re.search(rf"\b{re.escape(norm_aff)}\b", norm_user):
+                                    self._corrected_turn = next_turn.turn
+                                    return None
         return "quote_not_found: quote is not a verbatim substring of any user turn"
 
     def _duplicate_check(self, text: str, exclude: Optional[str] = None) -> Optional[str]:

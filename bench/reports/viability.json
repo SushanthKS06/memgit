@@ -1,0 +1,26 @@
+{
+  "transcripts_file": "bench\\data\\viability_transcripts.json",
+  "memory_dir": "bench\\.viability\\memory",
+  "sessions_total": 20,
+  "sessions_consolidated": 20,
+  "sessions_not_consolidated": 0,
+  "sessions_used_json_retry": 0,
+  "json_valid_rate": 1.0,
+  "verified_op_rate": 1.0,
+  "ops_accepted_add": 10,
+  "ops_accepted_supersede": 23,
+  "ops_rejected_total": 0,
+  "rejected_by_reason": {},
+  "noop_verdicts": 2,
+  "llm_calls": 20,
+  "llm_failures": 0,
+  "prompt_tokens": 33831,
+  "completion_tokens": 13693,
+  "usage_log": "./logs/usage.jsonl",
+  "thresholds": {
+    "min_json_valid": 0.9,
+    "min_verified": 0.8
+  },
+  "failed_sessions": [],
+  "passed": true
+}

@@ -146,6 +146,7 @@ class VerifySettings(BaseModel):
     normalise_rules: List[str]
     allow_assistant_quotes: bool = False
     affirmations: List[str] = Field(default_factory=list)
+    negations: List[str] = Field(default_factory=list)
 
     @field_validator("normalise_rules")
     @classmethod
@@ -187,6 +188,7 @@ class GitSettings(BaseModel):
     timeout_s: float
     core_autocrlf: bool
     log_limit: int
+    ref_pattern: str
 
     @field_validator("timeout_s")
     @classmethod
@@ -200,6 +202,17 @@ class GitSettings(BaseModel):
     def _log_limit(cls, v: int) -> int:
         if v < 1:
             raise ValueError("git.log_limit must be >= 1")
+        return v
+
+    @field_validator("ref_pattern")
+    @classmethod
+    def _ref_pattern(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("git.ref_pattern must be non-empty")
+        try:
+            re.compile(v)
+        except re.error as exc:
+            raise ValueError(f"git.ref_pattern is not a valid regex: {exc}")
         return v
 
     @model_validator(mode="after")
@@ -216,6 +229,10 @@ class WebSettings(BaseModel):
     port: int
     page_size: int
     rejections_rows: int
+    read_only: bool = False
+    allowed_hosts: List[str] = Field(default_factory=list)
+    max_body_bytes: int = 65536
+    csrf_token_bytes: int = 16
 
     @field_validator("port")
     @classmethod
@@ -227,6 +244,13 @@ class WebSettings(BaseModel):
     @field_validator("page_size", "rejections_rows")
     @classmethod
     def _positive(cls, v: int, info) -> int:
+        if v < 1:
+            raise ValueError(f"web.{info.field_name} must be >= 1")
+        return v
+
+    @field_validator("max_body_bytes", "csrf_token_bytes")
+    @classmethod
+    def _positive_bytes(cls, v: int, info) -> int:
         if v < 1:
             raise ValueError(f"web.{info.field_name} must be >= 1")
         return v

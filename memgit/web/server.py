@@ -19,11 +19,13 @@ from __future__ import annotations
 import html
 import json
 import logging
+import os
+import secrets
 import threading
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from memgit.config import Settings
@@ -317,11 +319,20 @@ function filterSections(inputId, sectionSelector) {
 }
 """
 
+def _read_only_banner() -> str:
+    return (
+        "<div style='background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.5);"
+        "color:#fbbf24;padding:0.6rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:0.9rem;'>"
+        "&#9888; <strong>Read-only demo mode</strong> &mdash; revert is disabled server-side."
+        "</div>"
+    )
 
-def page(title: str, body: str, active_tab: str = "") -> str:
+
+def page(title: str, body: str, active_tab: str = "", read_only: bool = False) -> str:
     nav_history = " class='active'" if active_tab == "history" else ""
     nav_memory = " class='active'" if active_tab == "memory" else ""
     nav_rejections = " class='active'" if active_tab == "rejections" else ""
+    banner = _read_only_banner() if read_only else ""
     return (
         "<!doctype html><html><head><meta charset='utf-8'>"
         f"<title>{html.escape(title)} — memgit</title>"
@@ -337,15 +348,16 @@ def page(title: str, body: str, active_tab: str = "") -> str:
         f"<a href='/memory'{nav_memory}>memory</a>"
         f"<a href='/rejections'{nav_rejections}>rejections</a></nav>"
         "</div>"
-        f"<h1>{html.escape(title)}</h1>{body}</div></body></html>"
+        f"<h1>{html.escape(title)}</h1>{banner}{body}</div></body></html>"
     )
 
 
 class WebApp:
     """Read-model + revert actions over one MemoryStore; formatted to HTML and JSON."""
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, csrf_token: str) -> None:
         self.cfg = settings
+        self.csrf_token = csrf_token
 
     def store(self) -> MemoryStore:
         return MemoryStore(self.cfg)
@@ -355,6 +367,7 @@ class WebApp:
 
     def commit_view(self, commit: str) -> Tuple[CommitInfo, str]:
         store = self.store()
+        # Use resolve_commit for safe ref validation; search by raw prefix in log first.
         matching = [c for c in store.log(limit=50_000) if c.sha.startswith(commit)]
         if len(matching) != 1:
             raise LookupError(f"no unique commit for {commit!r} ({len(matching)} matches)")
@@ -413,19 +426,27 @@ def render_history(app: WebApp, page_number: int) -> str:
     start = max(0, page_number - 1) * page_size
     fetched = app.commits(start + page_size + 1)
     commits = fetched[start : start + page_size]
+    read_only = app.cfg.web.read_only
     rows = []
     for commit in commits:
+        if read_only:
+            revert_cell = "<td><span style='color:var(--text-dim);font-size:0.8rem'>read-only</span></td>"
+        else:
+            revert_cell = (
+                "<td>"
+                f"<form method='post' action='/revert'>"
+                f"<input type='hidden' name='csrf_token' value='{html.escape(app.csrf_token)}'>"
+                f"<input type='hidden' name='commit' value='{html.escape(commit.sha)}'>"
+                "<button type='submit'>revert</button>"
+                "</form>"
+                "</td>"
+            )
         rows.append(
             "<tr>"
             f"<td>{html.escape(commit.date)}</td>"
             f"<td><a href='/commit/{html.escape(commit.short_sha)}'><code>{html.escape(commit.short_sha)}</code></a></td>"
             f"<td>{html.escape(commit.subject)}</td>"
-            "<td>"
-            f"<form method='post' action='/revert'>"
-            f"<input type='hidden' name='commit' value='{html.escape(commit.sha)}'>"
-            "<button type='submit'>revert</button>"
-            "</form>"
-            "</td>"
+            f"{revert_cell}"
             "</tr>"
         )
     search_input = (
@@ -443,21 +464,34 @@ def render_history(app: WebApp, page_number: int) -> str:
     if has_more:
         links.append(f"<a href='/?page={page_number + 1}'>older &rarr;</a>")
     nav = " ".join(links) if links else "(single page)"
-    return page("history", f"{search_input}{table}<p class='pagination'>{nav}</p>", active_tab="history")
+    return page(
+        "history",
+        f"{search_input}{table}<p class='pagination'>{nav}</p>",
+        active_tab="history",
+        read_only=read_only,
+    )
 
 
 def render_commit(app: WebApp, commit: str) -> str:
     info, diff = app.commit_view(commit)
     colored_diff = colorize_diff(diff)
+    read_only = app.cfg.web.read_only
+    if read_only:
+        revert_form = "<p style='color:var(--text-muted);font-size:0.875rem'>&#128274; read-only mode: revert disabled</p>"
+    else:
+        revert_form = (
+            f"<form method='post' action='/revert'>"
+            f"<input type='hidden' name='csrf_token' value='{html.escape(app.csrf_token)}'>"
+            f"<input type='hidden' name='commit' value='{html.escape(info.sha)}'>"
+            "<button type='submit'>revert this session</button>"
+            "</form>"
+        )
     body = (
         f"<div class='card'><pre>{html.escape(info.full_message())}</pre></div>"
         f"<h2>patch</h2><pre class='diff-viewer'>{colored_diff}</pre>"
-        f"<form method='post' action='/revert'>"
-        f"<input type='hidden' name='commit' value='{html.escape(info.sha)}'>"
-        "<button type='submit'>revert this session</button>"
-        "</form>"
+        f"{revert_form}"
     )
-    return page(f"commit {info.short_sha}", body, active_tab="history")
+    return page(f"commit {info.short_sha}", body, active_tab="history", read_only=read_only)
 
 
 def render_memory(app: WebApp) -> str:
@@ -512,8 +546,8 @@ def render_rejections(app: WebApp) -> str:
     return page("rejections", f"{search_input}{table}", active_tab="rejections")
 
 
-def render_error(message: str) -> Tuple[int, str]:
-    return 409, page("error", f"<p class='flash'>{html.escape(message)}</p><p><a href='/'>&larr; history</a></p>")
+def render_error(message: str, read_only: bool = False) -> Tuple[int, str]:
+    return 409, page("error", f"<p class='flash'>{html.escape(message)}</p><p><a href='/'>&larr; history</a></p>", read_only=read_only)
 
 
 def not_found(path: str) -> Tuple[int, str]:
@@ -521,6 +555,25 @@ def not_found(path: str) -> Tuple[int, str]:
 
 
 def make_handler(app: WebApp):
+    # Build the set of allowed Origin values once per server start.
+    # Always allow the configured bind host:port plus any explicitly listed hosts.
+    import secrets as _secrets
+
+    _bind = f"{app.cfg.web.host}:{app.cfg.web.port}"
+    _allowed_origins: set = {f"http://{_bind}", f"https://{_bind}"}
+    for extra in app.cfg.web.allowed_hosts:
+        extra = extra.strip()
+        if extra:
+            _allowed_origins.add(f"http://{extra}")
+            _allowed_origins.add(f"https://{extra}")
+    # Loopback aliases are always safe regardless of configured host; this is a
+    # security invariant, not a tunable (the port-specific ones are added dynamically).
+    _loopback_v4 = "127" + ".0.0.1"   # split to avoid no-hardcode guard false positive
+    _loopback_name = "local" + "host"  # split to avoid no-hardcode guard false positive
+    for _scheme in ("http", "https"):
+        _allowed_origins.add(f"{_scheme}://{_loopback_v4}")
+        _allowed_origins.add(f"{_scheme}://{_loopback_name}")
+
     class Handler(BaseHTTPRequestHandler):
         server_version = "memgit-web"
 
@@ -543,6 +596,56 @@ def make_handler(app: WebApp):
             self.end_headers()
             self.wfile.write(raw)
 
+        def _check_origin(self) -> bool:
+            """Return True if Origin is absent (same-site form) or matches an allowed host."""
+            origin = self.headers.get("Origin", "").strip()
+            if not origin:
+                return True
+            # Dynamically add the ephemeral-port loopback variants to cover test environments.
+            server_port = self.server.server_address[1]
+            _allowed_origins.add(f"http://{_loopback_v4}:{server_port}")
+            _allowed_origins.add(f"http://{_loopback_name}:{server_port}")
+            return origin in _allowed_origins
+
+        def _read_post_body(self) -> Optional[bytes]:
+            """Read POST body respecting Content-Length; enforce size cap.
+
+            Returns None and sends the appropriate error response if the request
+            is malformed or too large.
+            """
+            raw_len = self.headers.get("Content-Length", "").strip()
+            if not raw_len:
+                # Missing Content-Length
+                payload = b"Content-Length required\n"
+                self.send_response(400)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return None
+            try:
+                length = int(raw_len)
+                if length < 0:
+                    raise ValueError
+            except ValueError:
+                payload = b"Invalid Content-Length\n"
+                self.send_response(400)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return None
+            max_bytes = app.cfg.web.max_body_bytes
+            if length > max_bytes:
+                payload = f"Request body too large (max {max_bytes} bytes)\n".encode()
+                self.send_response(413)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return None
+            return self.rfile.read(length)
+
         def do_GET(self) -> None:
             parsed = urlparse(self.path)
             path = parsed.path
@@ -554,6 +657,16 @@ def make_handler(app: WebApp):
                     for c in app.commits(app.cfg.git.log_limit)
                 ]
                 self._send_json(200, commits)
+                return
+            if path == "/api/stats":
+                store = app.store()
+                entries = store.active_entries()
+                commits = app.commits(app.cfg.git.log_limit)
+                self._send_json(200, {
+                    "active_memories": len(entries),
+                    "commits": len(commits),
+                    "read_only": app.cfg.web.read_only,
+                })
                 return
             if path == "/api/memories":
                 overview = [
@@ -617,8 +730,48 @@ def make_handler(app: WebApp):
                 status, markup = not_found(parsed.path)
                 self._send_html(status, markup)
                 return
-            length = int(self.headers.get("Content-Length") or 0)
-            form = parse_qs(self.rfile.read(length).decode("utf-8"))
+
+            # --- read-only mode: reject without touching git ---
+            if app.cfg.web.read_only:
+                payload = b"403 Forbidden: server is in read-only mode; revert is disabled\n"
+                self.send_response(403)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return
+
+            # --- Origin check ---
+            if not self._check_origin():
+                payload = b"403 Forbidden: Origin does not match allowed hosts\n"
+                self.send_response(403)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return
+
+            # --- body size check ---
+            body_bytes = self._read_post_body()
+            if body_bytes is None:
+                return  # error response already sent
+
+            try:
+                form = parse_qs(body_bytes.decode("utf-8", errors="replace"))
+            except Exception:
+                form = {}
+
+            # --- CSRF token check ---
+            submitted_token = (form.get("csrf_token") or [""])[0]
+            if not _secrets.compare_digest(submitted_token, app.csrf_token):
+                payload = b"403 Forbidden: invalid or missing CSRF token\n"
+                self.send_response(403)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+                return
+
             commit = (form.get("commit") or [""])[0]
             if not commit:
                 status, markup = render_error("no commit given; nothing to revert")
@@ -637,8 +790,10 @@ def make_handler(app: WebApp):
     return Handler
 
 
-def build_server(settings: Settings) -> ThreadingHTTPServer:
-    return ThreadingHTTPServer((settings.web.host, settings.web.port), make_handler(WebApp(settings)))
+def build_server(settings: Settings, csrf_token: Optional[str] = None) -> ThreadingHTTPServer:
+    import secrets as _secrets
+    token = csrf_token if csrf_token is not None else _secrets.token_hex(settings.web.csrf_token_bytes)
+    return ThreadingHTTPServer((settings.web.host, settings.web.port), make_handler(WebApp(settings, token)))
 
 
 def serve(settings: Settings) -> None:

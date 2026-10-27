@@ -68,6 +68,10 @@ affirmations = [
     "sounds good", "do that", "let's do it", "approved", "ok",
     "okay", "perfect", "right", "confirmed",
 ]
+# negations: when non-empty AND allow_assistant_quotes=true, a user turn containing
+# one of these words near an affirmation will NOT count as grounding.
+# Default empty = feature off. Enable explicitly; document the limitation.
+negations = []
 
 
 [recall]
@@ -80,12 +84,19 @@ author_email = "memgit@example.com"
 timeout_s = 30.0                    # per git subprocess call timeout
 core_autocrlf = false               # repo-local core.autocrlf value; keep files LF
 log_limit = 50                      # default entry count for `memgit log --limit`
+# ref_pattern: only refs matching this regex (full match) are passed to git.
+# Must be 7-40 hex chars (short or full SHA). Anything else => StoreError.
+ref_pattern = "^[0-9a-fA-F]{7,40}$"
 
 [web]
 host = "127.0.0.1"
 port = 8377
 page_size = 20                      # commits listed per history page
 rejections_rows = 200               # max rows shown on the rejections audit page
+read_only = false                   # when true, POST /revert returns 403; set via env MEMGIT_WEB__READ_ONLY=true
+allowed_hosts = []                  # extra host:port strings allowed by origin check; empty = localhost only
+max_body_bytes = 65536              # POST body size cap (bytes); larger => 413
+csrf_token_bytes = 16               # entropy bytes for the per-process CSRF token
 
 [mcp]
 server_name = "memgit"

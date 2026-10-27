@@ -42,6 +42,9 @@ FORBIDDEN = [
     "different context md fallback",
     "sounds good",           # verify.affirmations entry
     "let's do it",           # verify.affirmations entry
+    # New tunables from Phase 1 — must also live in config, not source logic.
+    # Note: field defaults in config.py (Pydantic schema) are exempt; only
+    # values that appear in logic (comparisons, string building) are forbidden.
 ]
 
 

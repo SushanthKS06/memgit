@@ -7,9 +7,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import shutil
-import stat
 import sys
 from collections import Counter
 from pathlib import Path
@@ -18,6 +15,7 @@ from typing import Dict, List, Optional, Tuple
 from memgit.cli import bootstrap_settings
 from memgit.config import ConfigError, LoadedConfig
 from memgit.core.consolidate import Turn
+from memgit.core.fsutil import rmtree_force
 from memgit.core.llm import BudgetCounter, LLMClient, LLMError
 from memgit.core.session import MemorySession
 from memgit.core.store import MemoryStore
@@ -47,15 +45,8 @@ def to_turns(raw_transcript: List[Dict]) -> List[Turn]:
 
 
 def _wipe_scratch(root: Path) -> None:
-    """Windows-safe wipe: git marks .git/objects read-only; chmod + retry."""
-    if not root.exists():
-        return
-
-    def on_readonly(func, path, exc) -> None:
-        os.chmod(path, stat.S_IWRITE)
-        func(path)
-
-    shutil.rmtree(root, onexc=on_readonly)
+    """Windows-safe wipe delegated to the shared cross-version helper."""
+    rmtree_force(root)
 
 
 def run_gate(cfg: LoadedConfig, transcripts_path: Path) -> Dict:

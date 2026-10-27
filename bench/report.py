@@ -15,9 +15,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
-import shutil
-import stat
 import sys
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
@@ -30,6 +27,7 @@ from memgit.cli import bootstrap_settings
 from memgit.config import ConfigError, LoadedConfig, Settings
 from memgit.core.answer import Answerer
 from memgit.core.consolidate import Turn
+from memgit.core.fsutil import rmtree_force
 from memgit.core.llm import BudgetCounter, LLMClient, LLMError, LoadPrompt
 from memgit.core.retrieve import Recaller
 from memgit.core.session import MemorySession
@@ -104,15 +102,8 @@ def normalise(text: str) -> str:
 
 
 def _wipe_scratch(root: Path) -> None:
-    """Windows-safe wipe: git marks .git/objects read-only; chmod + retry."""
-    if not root.exists():
-        return
-
-    def on_readonly(func, path, exc) -> None:
-        os.chmod(path, stat.S_IWRITE)
-        func(path)
-
-    shutil.rmtree(root, onexc=on_readonly)
+    """Windows-safe wipe delegated to the shared cross-version helper."""
+    rmtree_force(root)
 
 
 def run_benchmark(

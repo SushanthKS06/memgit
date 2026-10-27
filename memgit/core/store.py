@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -357,26 +358,56 @@ class MemoryStore:
             )
         return commits
 
+    def resolve_commit(self, ref: str) -> str:
+        """Validate and resolve an untrusted commit ref to a full SHA.
+
+        Only refs matching git.ref_pattern (7-40 hex chars by default) are
+        permitted.  Anything else — flags like --output=/tmp/x, shell meta-
+        characters, HEAD, branch names, etc. — raises StoreError immediately
+        without touching git.
+
+        The accepted ref is then passed to ``git rev-parse --verify
+        --end-of-options <ref>^{commit}`` to confirm it resolves to a real
+        commit.  The returned value is always the full 40-char SHA from git.
+        """
+        if not ref or not ref.strip():
+            raise StoreError("commit ref must be non-empty")
+        pattern = self.cfg.git.ref_pattern
+        if not re.fullmatch(pattern, ref):
+            raise StoreError(
+                f"unsafe or invalid commit ref {ref!r}: must match git.ref_pattern={pattern!r}"
+            )
+        # Use --end-of-options so git never interprets the ref as a flag.
+        full_sha = self._git(
+            "rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}"
+        )
+        if not re.fullmatch(r"[0-9a-fA-F]{40}", full_sha):
+            raise StoreError(f"git rev-parse returned unexpected output for {ref!r}: {full_sha!r}")
+        return full_sha
+
     def show(self, commit: str) -> str:
         self.ensure_git()
-        return self._git("show", "--format=fuller", "--no-ext-diff", commit)
+        safe = self.resolve_commit(commit)
+        return self._git("show", "--format=fuller", "--no-ext-diff", "--end-of-options", safe)
 
     def diff_against(self, commit: str) -> str:
         self.ensure_git()
+        safe = self.resolve_commit(commit)
         try:
-            return self._git("diff", f"{commit}^", commit)
+            return self._git("diff", "--end-of-options", f"{safe}^", safe)
         except StoreError:
-            return self._git("show", "--format=", "--no-ext-diff", commit)
+            return self._git("show", "--format=", "--no-ext-diff", "--end-of-options", safe)
 
     def revert(self, commit: str) -> str:
         with self._lock:
             if self.session_id is not None:
                 raise StoreError("cannot revert inside an open session")
             self.ensure_git()
-            if not self.diff_against(commit).strip():
-                raise StoreError(f"revert skipped: commit {commit} has no changes (nothing to roll back)")
+            safe = self.resolve_commit(commit)
+            if not self.diff_against(safe).strip():
+                raise StoreError(f"revert skipped: commit {safe} has no changes (nothing to roll back)")
             try:
-                self._git("revert", "--no-edit", commit)
+                self._git("revert", "--no-edit", "--end-of-options", safe)
             except StoreError:
                 self._attempt_revert_abort()
                 raise
